@@ -23,7 +23,7 @@ export default {
       path: '/context-menu-demo',
     },
     {
-       name: '图片预览插件',
+      name: '图片预览插件',
       path: '/preview-demo',
     },
     {

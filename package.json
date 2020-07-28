@@ -1,6 +1,6 @@
 {
   "name": "vue-vben-admin",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "keywords": [
     "vue",
@@ -16,9 +16,10 @@
   "scripts": {
     "bootstrap": "yarn",
     "inspect": "vue-cli-service inspect > output.js",
-    "serve": "node ./build/task/serve",
+    "serve": "node ./build/npm-hook/preserve.js && node ./build/task/serve",
     "build": "node ./build/task/build",
     "build:no-cache": "npm run clean:cache && npm run build",
+    "build:site": "cross-env  SITE=true  npm run build:no-cache",
     "report": "cross-env  REPORT=true npm run build ",
     "log": "node ./build/task/log",
     "preview": "node ./build/task/preview",
@@ -129,7 +130,7 @@
     "typescript": "^3.9.5",
     "vue-template-compiler": "^2.6.11",
     "vue-tsx-support": "^2.3.3",
-    "webpack": "^4.43.0",
+    "webpack": "^4.44.0",
     "webpack-bundle-analyzer": "^3.8.0",
     "webpack-cli": "^3.3.11",
     "webpack-merge": "^5.0.9",

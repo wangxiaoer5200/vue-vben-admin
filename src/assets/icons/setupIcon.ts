@@ -12,6 +12,9 @@ export { default as ProjectOutline } from '@ant-design/icons/lib/outline/Project
 export { default as PushpinOutline } from '@ant-design/icons/lib/outline/PushpinOutline';
 export { default as GithubOutline } from '@ant-design/icons/lib/outline/GithubOutline';
 
+export { default as BugOutline } from '@ant-design/icons/lib/outline/BugOutline';
+export { default as BookOutline } from '@ant-design/icons/lib/outline/BookOutline';
+
 // upload
 export { default as ZoomInOutline } from '@ant-design/icons/lib/outline/ZoomInOutline';
 export { default as SettingOutline } from '@ant-design/icons/lib/outline/SettingOutline';
