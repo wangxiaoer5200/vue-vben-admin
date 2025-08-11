@@ -8,7 +8,7 @@ hero:
   text: 企业级管理系统框架
   tagline: 全新升级，开箱即用，简单高效
   image:
-    src: https://unpkg.com/@vbenjs/static-source@0.1.6/source/logo-v1.webp
+    src: https://unpkg.com/@vbenjs/static-source@0.1.7/source/logo-v1.webp
     alt: Vben Admin
   actions:
     - theme: brand
@@ -20,6 +20,9 @@ hero:
     - theme: alt
       text: 在 GitHub 查看
       link: https://github.com/vbenjs/vue-vben-admin
+    - theme: alt
+      text: DeepWiki 文档
+      link: https://deepwiki.com/vbenjs/vue-vben-admin
 
 features:
   - icon: 🚀

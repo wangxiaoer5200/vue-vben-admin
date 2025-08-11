@@ -46,8 +46,6 @@ The execution command is: `pnpm run [script]` or `npm run [script]`.
 ```json
 {
   "scripts": {
-    // Install dependencies
-    "bootstrap": "pnpm install",
     // Build the project
     "build": "cross-env NODE_OPTIONS=--max-old-space-size=8192 turbo build",
     // Build the project with analysis
@@ -77,7 +75,7 @@ The execution command is: `pnpm run [script]` or `npm run [script]`.
     // Check types
     "check:type": "turbo run typecheck",
     // Clean the project (delete node_modules, dist, .turbo, etc.)
-    "clean": "vsh clean",
+    "clean": "node ./scripts/clean.mjs",
     // Commit code
     "commit": "czg",
     // Start the project (by default, the dev scripts of all packages in the entire repository will run)
@@ -97,19 +95,19 @@ The execution command is: `pnpm run [script]` or `npm run [script]`.
     // Lint code
     "lint": "vsh lint",
     // After installing dependencies, execute the stub script for all packages
-    "postinstall": "turbo run stub",
+    "postinstall": "pnpm -r run stub --if-present",
     // Only allow using pnpm
     "preinstall": "npx only-allow pnpm",
-    // Install husky
-    "prepare": "is-ci || husky",
+    // Install lefthook
+    "prepare": "is-ci || lefthook install",
     // Preview the application
     "preview": "turbo-run preview",
     // Package specification check
     "publint": "vsh publint",
     // Delete all node_modules, yarn.lock, package.lock.json, and reinstall dependencies
-    "reinstall": "pnpm clean --del-lock && pnpm bootstrap",
+    "reinstall": "pnpm clean --del-lock && pnpm install",
     // Run vitest unit tests
-    "test:unit": "vitest",
+    "test:unit": "vitest run --dom",
     // Update project dependencies
     "update:deps": " pnpm update --latest --recursive",
     // Changeset generation and versioning
@@ -151,6 +149,79 @@ To run the `docs` application:
 ```bash
 pnpm dev:docs
 ```
+
+### Distinguishing Build Environments
+
+In actual business development, multiple environments are usually distinguished during the build process, such as the test environment `test` and the production environment `build`.
+
+At this point, you can modify three files and add corresponding script configurations to distinguish between production environments.
+
+Take the addition of the test environment `test` to `@vben/web-antd` as an example:
+
+- `apps\web-antd\package.json`
+
+```json
+"scripts": {
+  "build:prod": "pnpm vite build --mode production",
+  "build:test": "pnpm vite build --mode test",
+  "build:analyze": "pnpm vite build --mode analyze",
+  "dev": "pnpm vite --mode development",
+  "preview": "vite preview",
+  "typecheck": "vue-tsc --noEmit --skipLibCheck"
+}
+```
+
+Add the command `"build:test"` and change the original `"build"` to `"build:prod"` to avoid building packages for two environments simultaneously.
+
+- `package.json`
+
+```json
+"scripts": {
+    "build": "cross-env NODE_OPTIONS=--max-old-space-size=8192 turbo build",
+    "build:analyze": "turbo build:analyze",
+    "build:antd": "pnpm run build --filter=@vben/web-antd",
+    "build-test:antd": "pnpm run build --filter=@vben/web-antd build:test",
+
+    ······
+}
+```
+
+Add the command to build the test environment in the root directory `package.json`.
+
+- `turbo.json`
+
+```json
+"tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [
+        "dist/**",
+        "dist.zip",
+        ".vitepress/dist.zip",
+        ".vitepress/dist/**"
+      ]
+    },
+
+    "build-test:antd": {
+      "dependsOn": ["@vben/web-antd#build:test"],
+      "outputs": ["dist/**"]
+    },
+
+    "@vben/web-antd#build:test": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+
+    ······
+```
+
+Add the relevant dependent commands in `turbo.json`.
+
+## Public Static Resources
+
+If you need to use public static resources in the project, such as images, static HTML, etc., and you want to directly import them in the development process through `src="/xxx.png"`.
+
+You need to put the resource in the corresponding project's `public/static` directory. The import path for the resource should be `src="/static/xxx.png"`.
 
 ## DevTools
 

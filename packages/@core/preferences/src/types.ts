@@ -5,6 +5,7 @@ import type {
   BuiltinThemeType,
   ContentCompactType,
   DeepPartial,
+  LayoutHeaderMenuAlignType,
   LayoutHeaderModeType,
   LayoutType,
   LoginExpiredModeType,
@@ -32,8 +33,22 @@ interface AppPreferences {
   compact: boolean;
   /** 是否开启内容紧凑模式 */
   contentCompact: ContentCompactType;
+  /** 内容紧凑宽度 */
+  contentCompactWidth: number;
+  /** 内容内边距 */
+  contentPadding: number;
+  /** 内容底部内边距 */
+  contentPaddingBottom: number;
+  /** 内容左侧内边距 */
+  contentPaddingLeft: number;
+  /** 内容右侧内边距 */
+  contentPaddingRight: number;
+  /** 内容顶部内边距 */
+  contentPaddingTop: number;
   // /** 应用默认头像 */
   defaultAvatar: string;
+  /** 默认首页地址 */
+  defaultHomePath: string;
   // /** 开启动态标题 */
   dynamicTitle: boolean;
   /** 是否开启检查更新 */
@@ -60,6 +75,8 @@ interface AppPreferences {
    * @zh_CN 是否开启水印
    */
   watermark: boolean;
+  /** z-index */
+  zIndex: number;
 }
 
 interface BreadcrumbPreferences {
@@ -88,6 +105,8 @@ interface CopyrightPreferences {
   icp: string;
   /** 备案号链接 */
   icpLink: string;
+  /** 设置面板是否显示*/
+  settingShow?: boolean;
 }
 
 interface FooterPreferences {
@@ -95,13 +114,19 @@ interface FooterPreferences {
   enable: boolean;
   /** 底栏是否固定 */
   fixed: boolean;
+  /** 底栏高度 */
+  height: number;
 }
 
 interface HeaderPreferences {
   /** 顶栏是否启用 */
   enable: boolean;
+  /** 顶栏高度 */
+  height: number;
   /** 顶栏是否隐藏,css-隐藏 */
   hidden: boolean;
+  /** 顶栏菜单位置 */
+  menuAlign: LayoutHeaderMenuAlignType;
   /** header显示模式 */
   mode: LayoutHeaderModeType;
 }
@@ -109,6 +134,8 @@ interface HeaderPreferences {
 interface LogoPreferences {
   /** logo是否可见 */
   enable: boolean;
+  /** logo图片适应方式 */
+  fit: 'contain' | 'cover' | 'fill' | 'none' | 'scale-down';
   /** logo地址 */
   source: string;
 }
@@ -123,18 +150,30 @@ interface NavigationPreferences {
 }
 
 interface SidebarPreferences {
+  /** 点击目录时自动激活子菜单   */
+  autoActivateChild: boolean;
   /** 侧边栏是否折叠 */
   collapsed: boolean;
+  /** 侧边栏折叠按钮是否可见 */
+  collapsedButton: boolean;
   /** 侧边栏折叠时，是否显示title */
   collapsedShowTitle: boolean;
+  /** 侧边栏折叠宽度 */
+  collapseWidth: number;
   /** 侧边栏是否可见 */
   enable: boolean;
   /** 菜单自动展开状态 */
   expandOnHover: boolean;
   /** 侧边栏扩展区域是否折叠 */
   extraCollapse: boolean;
+  /** 侧边栏扩展区域折叠宽度 */
+  extraCollapsedWidth: number;
+  /** 侧边栏固定按钮是否可见 */
+  fixedButton: boolean;
   /** 侧边栏是否隐藏 - css */
   hidden: boolean;
+  /** 混合侧边栏宽度 */
+  mixedWidth: number;
   /** 侧边栏宽度 */
   width: number;
 }
@@ -154,13 +193,17 @@ interface ShortcutKeyPreferences {
 
 interface TabbarPreferences {
   /** 是否开启多标签页拖拽 */
-  dragable: boolean;
+  draggable: boolean;
   /** 是否开启多标签页 */
   enable: boolean;
   /** 标签页高度 */
   height: number;
   /** 开启标签页缓存功能 */
   keepAlive: boolean;
+  /** 限制最大数量 */
+  maxCount: number;
+  /** 是否点击中键时关闭标签 */
+  middleClickToClose: boolean;
   /** 是否持久化标签 */
   persist: boolean;
   /** 是否开启多标签页图标 */
@@ -169,10 +212,10 @@ interface TabbarPreferences {
   showMaximize: boolean;
   /** 显示更多按钮 */
   showMore: boolean;
-  /** 显示刷新按钮 */
-  showRefresh: boolean;
   /** 标签页风格 */
   styleType: TabsStyleType;
+  /** 是否开启鼠标滚轮响应 */
+  wheelable: boolean;
 }
 
 interface ThemePreferences {
@@ -218,6 +261,8 @@ interface WidgetPreferences {
   lockScreen: boolean;
   /** 是否显示通知部件 */
   notification: boolean;
+  /** 显示刷新按钮 */
+  refresh: boolean;
   /** 是否显示侧边栏显示/隐藏部件 */
   sidebarToggle: boolean;
   /** 是否显示主题切换部件 */

@@ -1,7 +1,7 @@
 name: ✨ New Feature Proposal
 description: Propose a new feature to be added to Vben Admin
-title: "FEATURE: "
-labels: ["enhancement: pending triage"]
+title: 'FEATURE: '
+labels: ['enhancement: pending triage']
 body:
   - type: markdown
     attributes:
@@ -62,7 +62,7 @@ body:
       label: Validations
       description: Before submitting the issue, please make sure you do the following
       options:
-        - label: Read the [docs](https://anncwb.github.io/vue-vben-admin-doc/)
+        - label: Read the [docs](https://doc.vben.pro/)
           required: true
         - label: Ensure the code is up to date. (Some issues have been fixed in the latest version)
           required: true

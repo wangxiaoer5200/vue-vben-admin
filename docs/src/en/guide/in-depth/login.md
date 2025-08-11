@@ -37,8 +37,6 @@ If you want to adjust the content of the login form, you can configure the `Auth
 ```vue
 <AuthenticationLogin
   :loading="authStore.loginLoading"
-  password-placeholder="123456"
-  username-placeholder="vben"
   @submit="authStore.authLogin"
 />
 ```
@@ -60,11 +58,6 @@ If you want to adjust the content of the login form, you can configure the `Auth
    * @en Whether it is in loading state
    */
   loading?: boolean;
-
-  /**
-   * @en Password placeholder
-   */
-  passwordPlaceholder?: string;
 
   /**
    * @en QR code login path
@@ -114,11 +107,6 @@ If you want to adjust the content of the login form, you can configure the `Auth
    * @en Login box title
    */
   title?: string;
-
-  /**
-   * @en Username placeholder
-   */
-  usernamePlaceholder?: string;
 }
 ```
 

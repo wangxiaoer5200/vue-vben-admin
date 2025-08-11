@@ -1,14 +1,23 @@
 <script lang="ts" setup>
 import type { ExtendedModalApi, ModalProps } from './modal';
 
-import { computed, nextTick, ref, watch } from 'vue';
+import {
+  computed,
+  nextTick,
+  onDeactivated,
+  provide,
+  ref,
+  unref,
+  useId,
+  watch,
+} from 'vue';
 
 import {
   useIsMobile,
-  usePriorityValue,
+  usePriorityValues,
   useSimpleLocale,
 } from '@vben-core/composables';
-import { Expand, Info, Shrink } from '@vben-core/icons';
+import { Expand, Shrink } from '@vben-core/icons';
 import {
   Dialog,
   DialogContent,
@@ -17,30 +26,28 @@ import {
   DialogHeader,
   DialogTitle,
   VbenButton,
+  VbenHelpTooltip,
   VbenIconButton,
   VbenLoading,
-  VbenTooltip,
   VisuallyHidden,
 } from '@vben-core/shadcn-ui';
-import { cn } from '@vben-core/shared';
+import { ELEMENT_ID_MAIN_CONTENT } from '@vben-core/shared/constants';
+import { globalShareState } from '@vben-core/shared/global-state';
+import { cn } from '@vben-core/shared/utils';
 
 import { useModalDraggable } from './use-modal-draggable';
 
 interface Props extends ModalProps {
-  class?: string;
-  contentClass?: string;
-  footerClass?: string;
-  headerClass?: string;
   modalApi?: ExtendedModalApi;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  class: '',
-  contentClass: '',
-  footerClass: '',
-  headerClass: '',
+  appendToMain: false,
+  destroyOnClose: false,
   modalApi: undefined,
 });
+
+const components = globalShareState.getComponents();
 
 const contentRef = ref();
 const wrapperRef = ref<HTMLElement>();
@@ -48,48 +55,77 @@ const dialogRef = ref();
 const headerRef = ref();
 const footerRef = ref();
 
+const id = useId();
+
+provide('DISMISSABLE_MODAL_ID', id);
+
 const { $t } = useSimpleLocale();
 const { isMobile } = useIsMobile();
 const state = props.modalApi?.useStore?.();
 
-const header = usePriorityValue('header', props, state);
-const title = usePriorityValue('title', props, state);
-const fullscreen = usePriorityValue('fullscreen', props, state);
-const description = usePriorityValue('description', props, state);
-const titleTooltip = usePriorityValue('titleTooltip', props, state);
-const showFooter = usePriorityValue('footer', props, state);
-const showLoading = usePriorityValue('loading', props, state);
-const closable = usePriorityValue('closable', props, state);
-const modal = usePriorityValue('modal', props, state);
-const centered = usePriorityValue('centered', props, state);
-const confirmLoading = usePriorityValue('confirmLoading', props, state);
-const cancelText = usePriorityValue('cancelText', props, state);
-const confirmText = usePriorityValue('confirmText', props, state);
-const draggable = usePriorityValue('draggable', props, state);
-const fullscreenButton = usePriorityValue('fullscreenButton', props, state);
-const closeOnClickModal = usePriorityValue('closeOnClickModal', props, state);
-const closeOnPressEscape = usePriorityValue('closeOnPressEscape', props, state);
-const showCancelButton = usePriorityValue('showCancelButton', props, state);
-const showConfirmButton = usePriorityValue('showConfirmButton', props, state);
+const {
+  appendToMain,
+  bordered,
+  cancelText,
+  centered,
+  class: modalClass,
+  closable,
+  closeOnClickModal,
+  closeOnPressEscape,
+  confirmDisabled,
+  confirmLoading,
+  confirmText,
+  contentClass,
+  description,
+  destroyOnClose,
+  draggable,
+  footer: showFooter,
+  footerClass,
+  fullscreen,
+  fullscreenButton,
+  header,
+  headerClass,
+  loading: showLoading,
+  modal,
+  openAutoFocus,
+  overlayBlur,
+  showCancelButton,
+  showConfirmButton,
+  submitting,
+  title,
+  titleTooltip,
+  animationType,
+  zIndex,
+} = usePriorityValues(props, state);
 
-const shouldFullscreen = computed(
-  () => (fullscreen.value && header.value) || isMobile.value,
-);
+const shouldFullscreen = computed(() => fullscreen.value || isMobile.value);
 
 const shouldDraggable = computed(
   () => draggable.value && !shouldFullscreen.value && header.value,
 );
 
+const getAppendTo = computed(() => {
+  return appendToMain.value
+    ? `#${ELEMENT_ID_MAIN_CONTENT}>div:not(.absolute)>div`
+    : undefined;
+});
+
 const { dragging, transform } = useModalDraggable(
   dialogRef,
   headerRef,
   shouldDraggable,
+  getAppendTo,
 );
+
+const firstOpened = ref(false);
+const isClosed = ref(true);
 
 watch(
   () => state?.value?.isOpen,
   async (v) => {
     if (v) {
+      isClosed.value = false;
+      if (!firstOpened.value) firstOpened.value = true;
       await nextTick();
       if (!contentRef.value) return;
       const innerContentRef = contentRef.value.getContentRef();
@@ -99,19 +135,30 @@ watch(
       dialogRef.value.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
     }
   },
+  { immediate: true },
 );
 
-watch(
-  () => showLoading.value,
-  (v) => {
-    if (v && wrapperRef.value) {
-      wrapperRef.value.scrollTo({
-        // behavior: 'smooth',
-        top: 0,
-      });
-    }
-  },
-);
+// watch(
+//   () => [showLoading.value, submitting.value],
+//   ([l, s]) => {
+//     if ((s || l) && wrapperRef.value) {
+//       wrapperRef.value.scrollTo({
+//         // behavior: 'smooth',
+//         top: 0,
+//       });
+//     }
+//   },
+// );
+
+/**
+ * 在开启keepAlive情况下 直接通过浏览器按钮/手势等返回 不会关闭弹窗
+ */
+onDeactivated(() => {
+  // 如果弹窗没有被挂载到内容区域，则关闭弹窗
+  if (!appendToMain.value) {
+    props.modalApi?.close();
+  }
+});
 
 function handleFullscreen() {
   props.modalApi?.setState((prev) => {
@@ -122,60 +169,105 @@ function handleFullscreen() {
   });
 }
 function interactOutside(e: Event) {
-  if (!closeOnClickModal.value) {
+  if (!closeOnClickModal.value || submitting.value) {
     e.preventDefault();
+    e.stopPropagation();
   }
 }
 function escapeKeyDown(e: KeyboardEvent) {
-  if (!closeOnPressEscape.value) {
+  if (!closeOnPressEscape.value || submitting.value) {
     e.preventDefault();
   }
 }
+
+function handerOpenAutoFocus(e: Event) {
+  if (!openAutoFocus.value) {
+    e?.preventDefault();
+  }
+}
+
 // pointer-down-outside
 function pointerDownOutside(e: Event) {
   const target = e.target as HTMLElement;
-  const isDismissableModal = !!target?.dataset.dismissableModal;
-  if (!closeOnClickModal.value || !isDismissableModal) {
+  const isDismissableModal = target?.dataset.dismissableModal;
+  if (
+    !closeOnClickModal.value ||
+    isDismissableModal !== id ||
+    submitting.value
+  ) {
     e.preventDefault();
+    e.stopPropagation();
   }
+}
+
+function handleFocusOutside(e: Event) {
+  e.preventDefault();
+  e.stopPropagation();
+}
+
+const getForceMount = computed(() => {
+  return !unref(destroyOnClose) && unref(firstOpened);
+});
+
+function handleClosed() {
+  isClosed.value = true;
+  props.modalApi?.onClosed();
 }
 </script>
 <template>
   <Dialog
-    :modal="modal"
+    :modal="false"
     :open="state?.isOpen"
-    @update:open="() => modalApi?.close()"
+    @update:open="() => (!submitting ? modalApi?.close() : undefined)"
   >
     <DialogContent
       ref="contentRef"
+      :append-to="getAppendTo"
       :class="
         cn(
-          'border-border left-0 right-0 top-[10vh] mx-auto flex max-h-[80%] w-[520px] flex-col border p-0',
-          props.class,
+          'left-0 right-0 top-[10vh] mx-auto flex max-h-[80%] w-[520px] flex-col p-0',
+          shouldFullscreen ? 'sm:rounded-none' : 'sm:rounded-[var(--radius)]',
+          modalClass,
           {
+            'border-border border': bordered,
+            'shadow-3xl': !bordered,
             'left-0 top-0 size-full max-h-full !translate-x-0 !translate-y-0':
               shouldFullscreen,
             'top-1/2 !-translate-y-1/2': centered && !shouldFullscreen,
             'duration-300': !dragging,
+            hidden: isClosed,
           },
         )
       "
+      :force-mount="getForceMount"
+      :modal="modal"
+      :open="state?.isOpen"
       :show-close="closable"
+      :animation-type="animationType"
+      :z-index="zIndex"
+      :overlay-blur="overlayBlur"
       close-class="top-3"
+      @close-auto-focus="handleFocusOutside"
+      @closed="handleClosed"
+      :close-disabled="submitting"
       @escape-key-down="escapeKeyDown"
+      @focus-outside="handleFocusOutside"
       @interact-outside="interactOutside"
+      @open-auto-focus="handerOpenAutoFocus"
+      @opened="() => modalApi?.onOpened()"
       @pointer-down-outside="pointerDownOutside"
     >
       <DialogHeader
         ref="headerRef"
         :class="
           cn(
-            'border-b px-5 py-4',
+            'px-5 py-4',
             {
+              'border-b': bordered,
               hidden: !header,
               'cursor-move select-none': shouldDraggable,
             },
-            props.headerClass,
+            headerClass,
           )
         "
       >
@@ -184,12 +276,9 @@ function pointerDownOutside(e: Event) {
             {{ title }}
 
             <slot v-if="titleTooltip" name="titleTooltip">
-              <VbenTooltip side="right">
-                <template #trigger>
-                  <Info class="inline-flex size-5 cursor-pointer pb-1" />
-                </template>
+              <VbenHelpTooltip trigger-class="pb-1">
                 {{ titleTooltip }}
-              </VbenTooltip>
+              </VbenHelpTooltip>
             </slot>
           </slot>
         </DialogTitle>
@@ -207,18 +296,13 @@ function pointerDownOutside(e: Event) {
         ref="wrapperRef"
         :class="
           cn('relative min-h-40 flex-1 overflow-y-auto p-3', contentClass, {
-            'overflow-hidden': showLoading,
+            'pointer-events-none': showLoading || submitting,
           })
         "
       >
-        <VbenLoading
-          v-if="showLoading"
-          class="size-full h-auto min-h-full"
-          spinning
-        />
         <slot></slot>
       </div>
-
+      <VbenLoading v-if="showLoading || submitting" spinning />
       <VbenIconButton
         v-if="fullscreenButton"
         class="hover:bg-accent hover:text-accent-foreground text-foreground/80 flex-center absolute right-10 top-3 hidden size-6 rounded-full px-1 text-lg opacity-70 transition-opacity hover:opacity-100 focus:outline-none disabled:pointer-events-none sm:block"
@@ -233,31 +317,39 @@ function pointerDownOutside(e: Event) {
         ref="footerRef"
         :class="
           cn(
-            'flex-row items-center justify-end border-t p-2',
-            props.footerClass,
+            'flex-row items-center justify-end p-2',
+            {
+              'border-t': bordered,
+            },
+            footerClass,
           )
         "
       >
         <slot name="prepend-footer"></slot>
         <slot name="footer">
-          <VbenButton
+          <component
+            :is="components.DefaultButton || VbenButton"
             v-if="showCancelButton"
             variant="ghost"
+            :disabled="submitting"
             @click="() => modalApi?.onCancel()"
           >
             <slot name="cancelText">
               {{ cancelText || $t('cancel') }}
             </slot>
-          </VbenButton>
-          <VbenButton
+          </component>
+          <slot name="center-footer"></slot>
+          <component
+            :is="components.PrimaryButton || VbenButton"
             v-if="showConfirmButton"
-            :loading="confirmLoading"
+            :disabled="confirmDisabled"
+            :loading="confirmLoading || submitting"
             @click="() => modalApi?.onConfirm()"
           >
             <slot name="confirmText">
               {{ confirmText || $t('confirm') }}
             </slot>
-          </VbenButton>
+          </component>
         </slot>
         <slot name="append-footer"></slot>
       </DialogFooter>

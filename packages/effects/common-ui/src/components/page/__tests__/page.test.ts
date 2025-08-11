@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils';
+
 import { describe, expect, it } from 'vitest';
 
 import { Page } from '..';
@@ -54,7 +55,7 @@ describe('page.vue', () => {
       },
     });
 
-    const contentDiv = wrapper.find('.m-4');
+    const contentDiv = wrapper.find('.p-4');
     expect(contentDiv.classes()).toContain('custom-class');
   });
 

@@ -3,6 +3,7 @@ import type { NotificationItem } from './types';
 
 import { Bell, MailCheck } from '@vben/icons';
 import { $t } from '@vben/locales';
+
 import {
   VbenButton,
   VbenIconButton,
@@ -67,7 +68,7 @@ function handleClick(item: NotificationItem) {
   >
     <template #trigger>
       <div class="flex-center mr-2 h-full" @click.stop="toggle()">
-        <VbenIconButton class="bell-button relative">
+        <VbenIconButton class="bell-button text-foreground relative">
           <span
             v-if="dot"
             class="bg-primary absolute right-0.5 top-0.5 h-2 w-2 rounded"
@@ -79,9 +80,10 @@ function handleClick(item: NotificationItem) {
 
     <div class="relative">
       <div class="flex items-center justify-between p-4 py-3">
-        <div class="text-foreground">{{ $t('widgets.notifications') }}</div>
+        <div class="text-foreground">{{ $t('ui.widgets.notifications') }}</div>
         <VbenIconButton
-          :tooltip="$t('widgets.markAllAsRead')"
+          :disabled="notifications.length <= 0"
+          :tooltip="$t('ui.widgets.markAllAsRead')"
           @click="handleMakeAll"
         >
           <MailCheck class="size-4" />
@@ -131,11 +133,16 @@ function handleClick(item: NotificationItem) {
       <div
         class="border-border flex items-center justify-between border-t px-4 py-3"
       >
-        <VbenButton size="sm" variant="ghost" @click="handleClear">
-          {{ $t('widgets.clearNotifications') }}
+        <VbenButton
+          :disabled="notifications.length <= 0"
+          size="sm"
+          variant="ghost"
+          @click="handleClear"
+        >
+          {{ $t('ui.widgets.clearNotifications') }}
         </VbenButton>
         <VbenButton size="sm" @click="handleViewAll">
-          {{ $t('widgets.viewAll') }}
+          {{ $t('ui.widgets.viewAll') }}
         </VbenButton>
       </div>
     </div>

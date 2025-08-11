@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, watch } from 'vue';
 
-import { cn } from '@vben-core/shared';
+import { cn } from '@vben-core/shared/utils';
 
 interface Props {
   class?: string;
@@ -25,7 +25,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 // const startTime = ref(0);
 const showSpinner = ref(false);
-const renderSpinner = ref(true);
+const renderSpinner = ref(false);
 const timer = ref<ReturnType<typeof setTimeout>>();
 
 watch(
@@ -63,7 +63,7 @@ function onTransitionEnd() {
   <div
     :class="
       cn(
-        'flex-center z-100 dark:bg-overlay absolute left-0 top-0 size-full bg-[hsl(var(--overlay-light))] backdrop-blur-sm transition-all duration-500',
+        'flex-center z-100 bg-overlay-content absolute left-0 top-0 size-full backdrop-blur-sm transition-all duration-500',
         {
           'invisible opacity-0': !showSpinner,
         },
@@ -73,12 +73,24 @@ function onTransitionEnd() {
     @transitionend="onTransitionEnd"
   >
     <div
+      :class="{ paused: !renderSpinner }"
+      v-if="renderSpinner"
       class="loader before:bg-primary/50 after:bg-primary relative size-12 before:absolute before:left-0 before:top-[60px] before:h-[5px] before:w-12 before:rounded-[50%] before:content-[''] after:absolute after:left-0 after:top-0 after:h-full after:w-full after:rounded after:content-['']"
     ></div>
   </div>
 </template>
 
 <style scoped>
+.paused {
+  &::before {
+    animation-play-state: paused !important;
+  }
+
+  &::after {
+    animation-play-state: paused !important;
+  }
+}
+
 .loader {
   &::before {
     animation: loader-shadow-ani 0.5s linear infinite;

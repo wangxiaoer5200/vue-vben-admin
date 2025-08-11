@@ -46,8 +46,6 @@ npm 脚本是项目常见的配置，用于执行一些常见的任务，比如�
 ```json
 {
   "scripts": {
-    // 安装依赖
-    "bootstrap": "pnpm install",
     // 构建项目
     "build": "cross-env NODE_OPTIONS=--max-old-space-size=8192 turbo build",
     // 构建项目并分析
@@ -77,7 +75,7 @@ npm 脚本是项目常见的配置，用于执行一些常见的任务，比如�
     // 检查类型
     "check:type": "turbo run typecheck",
     // 清理项目（删除node_modules、dist、.turbo）等目录
-    "clean": "vsh clean",
+    "clean": "node ./scripts/clean.mjs",
     // 提交代码
     "commit": "czg",
     // 启动项目（默认会运行整个仓库所有包的dev脚本）
@@ -97,19 +95,19 @@ npm 脚本是项目常见的配置，用于执行一些常见的任务，比如�
     // lint 代码
     "lint": "vsh lint",
     // 依赖安装完成之后，执行所有包的stub脚本
-    "postinstall": "turbo run stub",
+    "postinstall": "pnpm -r run stub --if-present",
     // 只允许使用pnpm
     "preinstall": "npx only-allow pnpm",
-    // husky的安装
-    "prepare": "is-ci || husky",
+    // lefthook的安装
+    "prepare": "is-ci || lefthook install",
     // 预览应用
     "preview": "turbo-run preview",
     // 包规范检查
     "publint": "vsh publint",
     // 删除所有的node_modules、yarn.lock、package.lock.json，重新安装依赖
-    "reinstall": "pnpm clean --del-lock && pnpm bootstrap",
+    "reinstall": "pnpm clean --del-lock && pnpm install",
     // 运行 vitest 单元测试
-    "test:unit": "vitest",
+    "test:unit": "vitest run --dom",
     // 更新项目依赖
     "update:deps": " pnpm update --latest --recursive",
     // changeset生成提交集
@@ -151,6 +149,79 @@ pnpm dev:ele
 ```bash
 pnpm dev:docs
 ```
+
+## 区分构建环境
+
+在实际的业务开发中，通常会在构建时区分多种环境，如测试环境`test`、生产环境`build`等。
+
+此时可以修改三个文件，在其中增加对应的脚本配置来达到区分生产环境的效果。
+
+以`@vben/web-antd`添加测试环境`test`为例：
+
+- `apps\web-antd\package.json`
+
+```json
+"scripts": {
+  "build:prod": "pnpm vite build --mode production",
+  "build:test": "pnpm vite build --mode test",
+  "build:analyze": "pnpm vite build --mode analyze",
+  "dev": "pnpm vite --mode development",
+  "preview": "vite preview",
+  "typecheck": "vue-tsc --noEmit --skipLibCheck"
+},
+```
+
+增加命令`"build:test"`, 并将原`"build"`改为`"build:prod"`以避免同时构建两个环境的包。
+
+- `package.json`
+
+```json
+"scripts": {
+    "build": "cross-env NODE_OPTIONS=--max-old-space-size=8192 turbo build",
+    "build:analyze": "turbo build:analyze",
+    "build:antd": "pnpm run build --filter=@vben/web-antd",
+    "build-test:antd": "pnpm run build --filter=@vben/web-antd build:test",
+
+    ······
+}
+```
+
+在根目录`package.json`中加入构建测试环境的命令
+
+- `turbo.json`
+
+```json
+"tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [
+        "dist/**",
+        "dist.zip",
+        ".vitepress/dist.zip",
+        ".vitepress/dist/**"
+      ]
+    },
+
+    "build-test:antd": {
+      "dependsOn": ["@vben/web-antd#build:test"],
+      "outputs": ["dist/**"]
+    },
+
+    "@vben/web-antd#build:test": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+
+    ······
+```
+
+在`turbo.json`中加入相关依赖的命令
+
+## 公共静态资源
+
+项目中需要使用到的公共静态资源，如：图片、静态HTML等，需要在开发中通过 `src="/xxx.png"` 直接引入的。
+
+需要将资源放在对应项目的 `public/static` 目录下。引入的路径为：`src="/static/xxx.png"`。
 
 ## DevTools
 

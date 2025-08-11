@@ -1,6 +1,6 @@
 {
   "name": "@vben/turbo-run",
-  "version": "5.2.1",
+  "version": "5.5.8",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -22,8 +22,8 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@clack/prompts": "^0.7.0",
+    "@clack/prompts": "catalog:",
     "@vben/node-utils": "workspace:*",
-    "cac": "^6.7.14"
+    "cac": "catalog:"
   }
 }

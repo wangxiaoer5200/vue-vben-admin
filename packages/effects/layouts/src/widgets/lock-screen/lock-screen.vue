@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watchEffect } from 'vue';
+import { computed, reactive, ref } from 'vue';
 
 import { LockKeyhole } from '@vben/icons';
 import { $t, useI18n } from '@vben/locales';
-import { storeToRefs, useLockStore } from '@vben/stores';
-import {
-  VbenAvatar,
-  VbenButton,
-  VbenInputPassword,
-} from '@vben-core/shadcn-ui';
+import { storeToRefs, useAccessStore } from '@vben/stores';
+
+import { useScrollLock } from '@vben-core/composables';
+import { useVbenForm, z } from '@vben-core/form-ui';
+import { VbenAvatar, VbenButton } from '@vben-core/shadcn-ui';
 
 import { useDateFormat, useNow } from '@vueuse/core';
 
@@ -27,7 +26,7 @@ withDefaults(defineProps<Props>(), {
 defineEmits<{ toLogin: [] }>();
 
 const { locale } = useI18n();
-const lockStore = useLockStore();
+const accessStore = useAccessStore();
 
 const now = useNow();
 const meridiem = useDateFormat(now, 'A');
@@ -36,53 +35,49 @@ const minute = useDateFormat(now, 'mm');
 const date = useDateFormat(now, 'YYYY-MM-DD dddd', { locales: locale.value });
 
 const showUnlockForm = ref(false);
-const validPass = ref(true);
-const { lockScreenPassword } = storeToRefs(lockStore);
+const { lockScreenPassword } = storeToRefs(accessStore);
 
-const formState = reactive({
-  password: '',
-  submitted: false,
-});
+const [Form, { form, validate }] = useVbenForm(
+  reactive({
+    commonConfig: {
+      hideLabel: true,
+      hideRequiredMark: true,
+    },
+    schema: computed(() => [
+      {
+        component: 'VbenInputPassword' as const,
+        componentProps: {
+          placeholder: $t('ui.widgets.lockScreen.placeholder'),
+        },
+        fieldName: 'password',
+        label: $t('authentication.password'),
+        rules: z.string().min(1, { message: $t('authentication.passwordTip') }),
+      },
+    ]),
+    showDefaultActions: false,
+  }),
+);
 
-const passwordStatus = computed(() => {
-  if (formState.submitted && !formState.password) {
-    return 'error';
+const validPass = computed(
+  () => lockScreenPassword?.value === form?.values?.password,
+);
+
+async function handleSubmit() {
+  const { valid } = await validate();
+  if (valid) {
+    if (validPass.value) {
+      accessStore.unlockScreen();
+    } else {
+      form.setFieldError('password', $t('authentication.passwordErrorTip'));
+    }
   }
-
-  if (formState.submitted && !validPass.value) {
-    return 'error';
-  }
-
-  return 'default';
-});
-
-const errorTip = computed(() => {
-  return lockScreenPassword?.value === undefined || !formState.password
-    ? $t('widgets.lockScreen.placeholder')
-    : $t('widgets.lockScreen.errorPasswordTip');
-});
-
-watchEffect(() => {
-  if (!formState.password) {
-    validPass.value = true;
-  }
-});
-
-function handleSubmit() {
-  formState.submitted = true;
-  if (passwordStatus.value !== 'default') {
-    return;
-  }
-  if (lockScreenPassword?.value !== formState.password) {
-    validPass.value = false;
-    return;
-  }
-  lockStore.unlockScreen();
 }
 
 function toggleUnlockForm() {
   showUnlockForm.value = !showUnlockForm.value;
 }
+
+useScrollLock();
 </script>
 
 <template>
@@ -90,27 +85,31 @@ function toggleUnlockForm() {
     <transition name="slide-left">
       <div v-show="!showUnlockForm" class="size-full">
         <div
-          class="flex-col-center text-foreground/80 hover:text-foreground group my-4 cursor-pointer text-xl font-semibold"
+          class="flex-col-center text-foreground/80 hover:text-foreground group fixed left-1/2 top-6 z-[2001] -translate-x-1/2 cursor-pointer text-xl font-semibold"
           @click="toggleUnlockForm"
         >
           <LockKeyhole
             class="size-5 transition-all duration-300 group-hover:scale-125"
           />
-          <span>{{ $t('widgets.lockScreen.unlock') }}</span>
+          <span>{{ $t('ui.widgets.lockScreen.unlock') }}</span>
         </div>
-        <div class="flex h-full justify-center px-[10%]">
-          <div
-            class="bg-accent flex-center relative mb-14 mr-20 h-4/5 w-2/5 flex-auto rounded-3xl text-center text-[260px]"
-          >
-            <span class="absolute left-4 top-4 text-xl font-semibold">
-              {{ meridiem }}
-            </span>
-            {{ hour }}
-          </div>
-          <div
-            class="bg-accent flex-center mb-14 h-4/5 w-2/5 flex-auto rounded-3xl text-center text-[260px]"
-          >
-            {{ minute }}
+        <div class="flex h-full w-full items-center justify-center">
+          <div class="flex w-full justify-center gap-4 px-4 sm:gap-6 md:gap-8">
+            <div
+              class="bg-accent relative flex h-[140px] w-[140px] items-center justify-center rounded-xl text-[36px] sm:h-[160px] sm:w-[160px] sm:text-[42px] md:h-[200px] md:w-[200px] md:text-[72px]"
+            >
+              <span
+                class="absolute left-3 top-3 text-xs font-semibold sm:text-sm md:text-xl"
+              >
+                {{ meridiem }}
+              </span>
+              {{ hour }}
+            </div>
+            <div
+              class="bg-accent flex h-[140px] w-[140px] items-center justify-center rounded-xl text-[36px] sm:h-[160px] sm:w-[160px] sm:text-[42px] md:h-[200px] md:w-[200px] md:text-[72px]"
+            >
+              {{ minute }}
+            </div>
           </div>
         </div>
       </div>
@@ -122,30 +121,20 @@ function toggleUnlockForm() {
         class="flex-center size-full"
         @keydown.enter.prevent="handleSubmit"
       >
-        <div class="flex-col-center mb-10 w-[300px]">
+        <div class="flex-col-center mb-10 w-[90%] max-w-[300px] px-4">
           <VbenAvatar :src="avatar" class="enter-x mb-6 size-20" />
           <div class="enter-x mb-2 w-full items-center">
-            <VbenInputPassword
-              v-model="formState.password"
-              :autofocus="true"
-              :error-tip="errorTip"
-              :label="$t('widgets.lockScreen.password')"
-              :placeholder="$t('widgets.lockScreen.placeholder')"
-              :status="passwordStatus"
-              name="password"
-              required
-              type="password"
-            />
+            <Form />
           </div>
           <VbenButton class="enter-x w-full" @click="handleSubmit">
-            {{ $t('widgets.lockScreen.entry') }}
+            {{ $t('ui.widgets.lockScreen.entry') }}
           </VbenButton>
           <VbenButton
             class="enter-x my-2 w-full"
             variant="ghost"
             @click="$emit('toLogin')"
           >
-            {{ $t('widgets.lockScreen.backToLogin') }}
+            {{ $t('ui.widgets.lockScreen.backToLogin') }}
           </VbenButton>
           <VbenButton
             class="enter-x mr-2 w-full"
@@ -159,12 +148,13 @@ function toggleUnlockForm() {
     </transition>
 
     <div
-      class="enter-y absolute bottom-5 w-full text-center xl:text-xl 2xl:text-3xl"
+      class="enter-y absolute bottom-5 w-full text-center text-xl md:text-2xl xl:text-xl 2xl:text-3xl"
     >
-      <div v-if="showUnlockForm" class="enter-x mb-2 text-3xl">
-        {{ hour }}:{{ minute }} <span class="text-lg">{{ meridiem }}</span>
+      <div v-if="showUnlockForm" class="enter-x mb-2 text-2xl md:text-3xl">
+        {{ hour }}:{{ minute }}
+        <span class="text-base md:text-lg">{{ meridiem }}</span>
       </div>
-      <div class="text-3xl">{{ date }}</div>
+      <div class="text-xl md:text-3xl">{{ date }}</div>
     </div>
   </div>
 </template>

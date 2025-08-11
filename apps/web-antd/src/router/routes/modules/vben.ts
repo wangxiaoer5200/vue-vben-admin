@@ -8,30 +8,20 @@ import {
   VBEN_NAIVE_PREVIEW_URL,
 } from '@vben/constants';
 
-import { BasicLayout, IFrameView } from '#/layouts';
+import { IFrameView } from '#/layouts';
 import { $t } from '#/locales';
 
 const routes: RouteRecordRaw[] = [
   {
-    component: BasicLayout,
     meta: {
       badgeType: 'dot',
       icon: VBEN_LOGO_URL,
-      order: 9999,
-      title: $t('page.vben.title'),
+      order: 9998,
+      title: $t('demos.vben.title'),
     },
     name: 'VbenProject',
     path: '/vben-admin',
     children: [
-      {
-        name: 'VbenAbout',
-        path: '/vben-admin/about',
-        component: () => import('#/views/_core/about/index.vue'),
-        meta: {
-          icon: 'lucide:copyright',
-          title: $t('page.vben.about'),
-        },
-      },
       {
         name: 'VbenDocument',
         path: '/vben-admin/document',
@@ -39,7 +29,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           icon: 'lucide:book-open-text',
           link: VBEN_DOC_URL,
-          title: $t('page.vben.document'),
+          title: $t('demos.vben.document'),
         },
       },
       {
@@ -58,8 +48,9 @@ const routes: RouteRecordRaw[] = [
         component: IFrameView,
         meta: {
           badgeType: 'dot',
+          icon: 'logos:naiveui',
           link: VBEN_NAIVE_PREVIEW_URL,
-          title: $t('page.vben.naive-ui'),
+          title: $t('demos.vben.naive-ui'),
         },
       },
       {
@@ -68,11 +59,22 @@ const routes: RouteRecordRaw[] = [
         component: IFrameView,
         meta: {
           badgeType: 'dot',
+          icon: 'logos:element',
           link: VBEN_ELE_PREVIEW_URL,
-          title: $t('page.vben.element-plus'),
+          title: $t('demos.vben.element-plus'),
         },
       },
     ],
+  },
+  {
+    name: 'VbenAbout',
+    path: '/vben-admin/about',
+    component: () => import('#/views/_core/about/index.vue'),
+    meta: {
+      icon: 'lucide:copyright',
+      title: $t('demos.vben.about'),
+      order: 9999,
+    },
   },
 ];
 

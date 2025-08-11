@@ -1,6 +1,6 @@
 {
   "name": "@vben/vsh",
-  "version": "5.2.1",
+  "version": "5.5.8",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -23,9 +23,9 @@
   },
   "dependencies": {
     "@vben/node-utils": "workspace:*",
-    "cac": "^6.7.14",
-    "circular-dependency-scanner": "^2.2.2",
-    "depcheck": "^1.4.7",
-    "publint": "^0.2.10"
+    "cac": "catalog:",
+    "circular-dependency-scanner": "catalog:",
+    "depcheck": "catalog:",
+    "publint": "catalog:"
   }
 }

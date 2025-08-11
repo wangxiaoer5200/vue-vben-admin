@@ -3,17 +3,13 @@ import { baseRequestClient, requestClient } from '#/api/request';
 export namespace AuthApi {
   /** 登录接口参数 */
   export interface LoginParams {
-    password: string;
-    username: string;
+    password?: string;
+    username?: string;
   }
 
   /** 登录接口返回值 */
   export interface LoginResult {
     accessToken: string;
-    desc: string;
-    realName: string;
-    userId: string;
-    username: string;
   }
 
   export interface RefreshTokenResult {
@@ -26,23 +22,29 @@ export namespace AuthApi {
  * 登录
  */
 export async function loginApi(data: AuthApi.LoginParams) {
-  return requestClient.post<AuthApi.LoginResult>('/auth/login', data);
+  return requestClient.post<AuthApi.LoginResult>('/auth/login', data, {
+    withCredentials: true,
+  });
 }
 
 /**
  * 刷新accessToken
  */
 export async function refreshTokenApi() {
-  return baseRequestClient.post<AuthApi.RefreshTokenResult>('/auth/refresh', {
-    withCredentials: true,
-  });
+  return baseRequestClient.post<AuthApi.RefreshTokenResult>(
+    '/auth/refresh',
+    null,
+    {
+      withCredentials: true,
+    },
+  );
 }
 
 /**
  * 退出登录
  */
 export async function logoutApi() {
-  return baseRequestClient.post('/auth/logout', {
+  return baseRequestClient.post('/auth/logout', null, {
     withCredentials: true,
   });
 }

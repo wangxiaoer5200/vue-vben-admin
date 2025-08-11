@@ -7,7 +7,9 @@ import { useRouter } from 'vue-router';
 import { SearchX, X } from '@vben/icons';
 import { $t } from '@vben/locales';
 import { mapTree, traverseTreeValues, uniqueByField } from '@vben/utils';
+
 import { VbenIcon, VbenScrollbar } from '@vben-core/shadcn-ui';
+import { isHttpUrl } from '@vben-core/shared/utils';
 
 import { onKeyStroke, useLocalStorage, useThrottleFn } from '@vueuse/core';
 
@@ -16,7 +18,7 @@ defineOptions({
 });
 
 const props = withDefaults(
-  defineProps<{ keyword: string; menus: MenuRecordRaw[] }>(),
+  defineProps<{ keyword?: string; menus?: MenuRecordRaw[] }>(),
   {
     keyword: '',
     menus: () => [],
@@ -96,10 +98,14 @@ async function handleEnter() {
   }
   const to = result[index];
   if (to) {
-    searchHistory.value.push(to);
+    searchHistory.value = uniqueByField([...searchHistory.value, to], 'path');
     handleClose();
     await nextTick();
-    router.push(to.path);
+    if (isHttpUrl(to.path)) {
+      window.open(to.path, '_blank');
+    } else {
+      router.push({ path: to.path, replace: true });
+    }
   }
 }
 
@@ -145,7 +151,7 @@ function removeItem(index: number) {
   } else {
     searchHistory.value.splice(index, 1);
   }
-  activeIndex.value = activeIndex.value - 1 >= 0 ? activeIndex.value - 1 : 0;
+  activeIndex.value = Math.max(activeIndex.value - 1, 0);
   scrollIntoView();
 }
 
@@ -157,14 +163,14 @@ const code = new Set([
   '*',
   '+',
   '.',
-  '[',
-  ']',
   '?',
+  '[',
   '\\',
+  ']',
   '^',
   '{',
-  '}',
   '|',
+  '}',
 ]);
 
 // 转换函数，用于转义特殊字符
@@ -225,7 +231,7 @@ onMounted(() => {
       >
         <SearchX class="mx-auto mt-4 size-12" />
         <p class="mb-10 mt-6 text-xs">
-          {{ $t('widgets.search.noResults') }}
+          {{ $t('ui.widgets.search.noResults') }}
           <span class="text-foreground text-sm font-medium">
             "{{ keyword }}"
           </span>
@@ -237,7 +243,7 @@ onMounted(() => {
         class="text-muted-foreground text-center"
       >
         <p class="my-10 text-xs">
-          {{ $t('widgets.search.noRecent') }}
+          {{ $t('ui.widgets.search.noRecent') }}
         </p>
       </div>
 
@@ -246,7 +252,7 @@ onMounted(() => {
           v-if="searchHistory.length > 0 && !keyword"
           class="text-muted-foreground mb-2 text-xs"
         >
-          {{ $t('widgets.search.recent') }}
+          {{ $t('ui.widgets.search.recent') }}
         </li>
         <li
           v-for="(item, index) in uniqueByField(searchResults, 'path')"

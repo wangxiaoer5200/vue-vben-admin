@@ -1,3 +1,4 @@
+// eslint-disable-next-line vue/prefer-import-from-vue
 import { isFunction, isObject, isString } from '@vue/shared';
 
 /**
@@ -8,6 +9,15 @@ import { isFunction, isObject, isString } from '@vue/shared';
  */
 function isUndefined(value?: unknown): value is undefined {
   return value === undefined;
+}
+
+/**
+ * 检查传入的值是否为boolean
+ * @param value
+ * @returns 如果值是布尔值，返回true，否则返回false。
+ */
+function isBoolean(value: unknown): value is boolean {
+  return typeof value === 'boolean';
 }
 
 /**
@@ -141,6 +151,7 @@ function getFirstNonNullOrUndefined<T>(
 
 export {
   getFirstNonNullOrUndefined,
+  isBoolean,
   isEmpty,
   isFunction,
   isHttpUrl,

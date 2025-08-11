@@ -23,16 +23,23 @@
     scroll-behavior: smooth;
     text-rendering: optimizelegibility;
     -webkit-tap-highlight-color: transparent;
+
+    /* -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale; */
   }
 
   #app,
   body,
   html {
-    @apply !pointer-events-auto size-full overscroll-none;
+    @apply size-full;
+
+    /* scrollbar-gutter: stable; */
   }
 
   body {
     min-height: 100vh;
+
+    /* pointer-events: auto !important; */
 
     /* overflow: overlay; */
 
@@ -75,11 +82,11 @@
     @apply opacity-100;
   }
 
-  input:-webkit-autofill {
+  /* input:-webkit-autofill {
     @apply border-none;
 
     box-shadow: 0 0 0 1000px transparent inset;
-  }
+  } */
 
   input[type='number']::-webkit-inner-spin-button,
   input[type='number']::-webkit-outer-spin-button {
@@ -133,6 +140,10 @@
 
   .outline-box:not(.outline-box-active):hover::after {
     @apply outline-primary left-0 top-0 h-full w-full p-1 opacity-100;
+  }
+
+  .vben-link {
+    @apply text-primary hover:text-primary-hover active:text-primary-active cursor-pointer;
   }
 
   .card-box {

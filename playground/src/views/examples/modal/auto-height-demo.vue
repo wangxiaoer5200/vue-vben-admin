@@ -16,16 +16,19 @@ const [Modal, modalApi] = useVbenModal({
   },
   onOpenChange(isOpen) {
     if (isOpen) {
-      handleUpdate(10);
+      handleUpdate();
     }
   },
 });
 
-function handleUpdate(len: number) {
-  modalApi.setState({ loading: true });
+function handleUpdate(len?: number) {
+  modalApi.setState({ confirmDisabled: true, loading: true });
   setTimeout(() => {
-    list.value = Array.from({ length: len }, (_v, k) => k + 1);
-    modalApi.setState({ loading: false });
+    list.value = Array.from(
+      { length: len ?? Math.floor(Math.random() * 10) + 1 },
+      (_v, k) => k + 1,
+    );
+    modalApi.setState({ confirmDisabled: false, loading: false });
   }, 2000);
 }
 </script>
@@ -40,7 +43,7 @@ function handleUpdate(len: number) {
       {{ item }}
     </div>
     <template #prepend-footer>
-      <Button type="link" @click="handleUpdate(6)">点击更新数据</Button>
+      <Button type="link" @click="handleUpdate()">点击更新数据</Button>
     </template>
   </Modal>
 </template>

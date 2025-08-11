@@ -22,12 +22,13 @@ describe('useAccessStore', () => {
     const tab: any = {
       fullPath: '/home',
       meta: {},
+      key: '/home',
       name: 'Home',
       path: '/home',
     };
-    store.addTab(tab);
+    const addNewTab = store.addTab(tab);
     expect(store.tabs.length).toBe(1);
-    expect(store.tabs[0]).toEqual(tab);
+    expect(store.tabs[0]).toEqual(addNewTab);
   });
 
   it('adds a new tab if it does not exist', () => {
@@ -38,20 +39,22 @@ describe('useAccessStore', () => {
       name: 'New',
       path: '/new',
     };
-    store.addTab(newTab);
-    expect(store.tabs).toContainEqual(newTab);
+    const addNewTab = store.addTab(newTab);
+    expect(store.tabs).toContainEqual(addNewTab);
   });
 
   it('updates an existing tab instead of adding a new one', () => {
     const store = useTabbarStore();
     const initialTab: any = {
       fullPath: '/existing',
-      meta: {},
+      meta: {
+        fullPathKey: false,
+      },
       name: 'Existing',
       path: '/existing',
       query: {},
     };
-    store.tabs.push(initialTab);
+    store.addTab(initialTab);
     const updatedTab = { ...initialTab, query: { id: '1' } };
     store.addTab(updatedTab);
     expect(store.tabs.length).toBe(1);
@@ -60,15 +63,17 @@ describe('useAccessStore', () => {
 
   it('closes all tabs', async () => {
     const store = useTabbarStore();
-    store.tabs = [
-      { fullPath: '/home', meta: {}, name: 'Home', path: '/home' },
-    ] as any;
-    router.replace = vi.fn(); // 使用 vitest 的 mock 函数
+    store.addTab({
+      fullPath: '/home',
+      meta: {},
+      name: 'Home',
+      path: '/home',
+    } as any);
+    router.replace = vi.fn();
 
     await store.closeAllTabs(router);
 
-    expect(store.tabs.length).toBe(1); // 假设没有固定的标签页
-    // expect(router.replace).toHaveBeenCalled();
+    expect(store.tabs.length).toBe(1);
   });
 
   it('closes a non-affix tab', () => {
@@ -158,10 +163,10 @@ describe('useAccessStore', () => {
       path: '/contact',
     } as any);
 
-    await store._bulkCloseByPaths(['/home', '/contact']);
+    await store._bulkCloseByKeys(['/home', '/contact']);
 
     expect(store.tabs).toHaveLength(1);
-    expect(store.tabs[0].name).toBe('About');
+    expect(store.tabs[0]?.name).toBe('About');
   });
 
   it('closes all tabs to the left of the specified tab', async () => {
@@ -184,12 +189,11 @@ describe('useAccessStore', () => {
       name: 'Contact',
       path: '/contact',
     };
-    store.addTab(targetTab);
-
-    await store.closeLeftTabs(targetTab);
+    const addTargetTab = store.addTab(targetTab);
+    await store.closeLeftTabs(addTargetTab);
 
     expect(store.tabs).toHaveLength(1);
-    expect(store.tabs[0].name).toBe('Contact');
+    expect(store.tabs[0]?.name).toBe('Contact');
   });
 
   it('closes all tabs except the specified tab', async () => {
@@ -206,7 +210,7 @@ describe('useAccessStore', () => {
       name: 'About',
       path: '/about',
     };
-    store.addTab(targetTab);
+    const addTargetTab = store.addTab(targetTab);
     store.addTab({
       fullPath: '/contact',
       meta: {},
@@ -214,10 +218,10 @@ describe('useAccessStore', () => {
       path: '/contact',
     } as any);
 
-    await store.closeOtherTabs(targetTab);
+    await store.closeOtherTabs(addTargetTab);
 
     expect(store.tabs).toHaveLength(1);
-    expect(store.tabs[0].name).toBe('About');
+    expect(store.tabs[0]?.name).toBe('About');
   });
 
   it('closes all tabs to the right of the specified tab', async () => {
@@ -228,7 +232,7 @@ describe('useAccessStore', () => {
       name: 'Home',
       path: '/home',
     };
-    store.addTab(targetTab);
+    const addTargetTab = store.addTab(targetTab);
     store.addTab({
       fullPath: '/about',
       meta: {},
@@ -242,10 +246,10 @@ describe('useAccessStore', () => {
       path: '/contact',
     } as any);
 
-    await store.closeRightTabs(targetTab);
+    await store.closeRightTabs(addTargetTab);
 
     expect(store.tabs).toHaveLength(1);
-    expect(store.tabs[0].name).toBe('Home');
+    expect(store.tabs[0]?.name).toBe('Home');
   });
 
   it('closes the tab with the specified key', async () => {

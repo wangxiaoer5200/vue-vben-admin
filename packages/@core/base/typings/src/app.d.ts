@@ -1,6 +1,8 @@
 type LayoutType =
   | 'full-content'
+  | 'header-mixed-nav'
   | 'header-nav'
+  | 'header-sidebar-nav'
   | 'mixed-nav'
   | 'sidebar-mixed-nav'
   | 'sidebar-nav';
@@ -38,6 +40,7 @@ type BuiltinThemeType =
 type ContentCompactType = 'compact' | 'wide';
 
 type LayoutHeaderModeType = 'auto' | 'auto-scroll' | 'fixed' | 'static';
+type LayoutHeaderMenuAlignType = 'center' | 'end' | 'start';
 
 /**
  * 登录过期模式
@@ -57,8 +60,9 @@ type BreadcrumbStyleType = 'background' | 'normal';
  * 权限模式
  * backend 后端权限模式
  * frontend 前端权限模式
+ * mixed 混合权限模式
  */
-type AccessModeType = 'backend' | 'frontend';
+type AccessModeType = 'backend' | 'frontend' | 'mixed';
 
 /**
  * 导航风格
@@ -95,6 +99,7 @@ export type {
   BreadcrumbStyleType,
   BuiltinThemeType,
   ContentCompactType,
+  LayoutHeaderMenuAlignType,
   LayoutHeaderModeType,
   LayoutType,
   LoginExpiredModeType,

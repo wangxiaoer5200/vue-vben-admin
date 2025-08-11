@@ -1,11 +1,18 @@
 <script setup lang="ts">
+import type { CSSProperties } from 'vue';
+
 import type { VbenLayoutProps } from './vben-layout';
 
-import type { CSSProperties } from 'vue';
 import { computed, ref, watch } from 'vue';
 
+import {
+  SCROLL_FIXED_CLASS,
+  useLayoutFooterStyle,
+  useLayoutHeaderStyle,
+} from '@vben-core/composables';
 import { Menu } from '@vben-core/icons';
 import { VbenIconButton } from '@vben-core/shadcn-ui';
+import { ELEMENT_ID_MAIN_CONTENT } from '@vben-core/shared/constants';
 
 import { useMouse, useScroll, useThrottleFn } from '@vueuse/core';
 
@@ -42,8 +49,10 @@ const props = withDefaults(defineProps<Props>(), {
   headerVisible: true,
   isMobile: false,
   layout: 'sidebar-nav',
+  sidebarCollapsedButton: true,
   sidebarCollapseShowTitle: false,
   sidebarExtraCollapsedWidth: 60,
+  sidebarFixedButton: true,
   sidebarHidden: false,
   sidebarMixedWidth: 80,
   sidebarTheme: 'dark',
@@ -55,10 +64,16 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{ sideMouseLeave: []; toggleSidebar: [] }>();
-const sidebarCollapse = defineModel<boolean>('sidebarCollapse');
+const sidebarCollapse = defineModel<boolean>('sidebarCollapse', {
+  default: false,
+});
 const sidebarExtraVisible = defineModel<boolean>('sidebarExtraVisible');
-const sidebarExtraCollapse = defineModel<boolean>('sidebarExtraCollapse');
-const sidebarExpandOnHover = defineModel<boolean>('sidebarExpandOnHover');
+const sidebarExtraCollapse = defineModel<boolean>('sidebarExtraCollapse', {
+  default: false,
+});
+const sidebarExpandOnHover = defineModel<boolean>('sidebarExpandOnHover', {
+  default: false,
+});
 const sidebarEnable = defineModel<boolean>('sidebarEnable', { default: true });
 
 // side是否处于hover状态展开菜单中
@@ -73,11 +88,15 @@ const {
   y: scrollY,
 } = useScroll(document);
 
+const { setLayoutHeaderHeight } = useLayoutHeaderStyle();
+const { setLayoutFooterHeight } = useLayoutFooterStyle();
+
 const { y: mouseY } = useMouse({ target: contentRef, type: 'client' });
 
 const {
   currentLayout,
   isFullContent,
+  isHeaderMixedNav,
   isHeaderNav,
   isMixedNav,
   isSidebarMixedNav,
@@ -103,7 +122,9 @@ const getSideCollapseWidth = computed(() => {
   const { sidebarCollapseShowTitle, sidebarMixedWidth, sideCollapseWidth } =
     props;
 
-  return sidebarCollapseShowTitle || isSidebarMixedNav.value
+  return sidebarCollapseShowTitle ||
+    isSidebarMixedNav.value ||
+    isHeaderMixedNav.value
     ? sidebarMixedWidth
     : sideCollapseWidth;
 });
@@ -136,12 +157,15 @@ const getSidebarWidth = computed(() => {
 
   if (
     !sidebarEnableState.value ||
-    (sidebarHidden && !isSidebarMixedNav.value && !isMixedNav.value)
+    (sidebarHidden &&
+      !isSidebarMixedNav.value &&
+      !isMixedNav.value &&
+      !isHeaderMixedNav.value)
   ) {
     return width;
   }
 
-  if (isSidebarMixedNav.value && !isMobile) {
+  if ((isHeaderMixedNav.value || isSidebarMixedNav.value) && !isMobile) {
     width = sidebarMixedWidth;
   } else if (sidebarCollapse.value) {
     width = isMobile ? 0 : getSideCollapseWidth.value;
@@ -167,7 +191,9 @@ const isSideMode = computed(
   () =>
     currentLayout.value === 'mixed-nav' ||
     currentLayout.value === 'sidebar-mixed-nav' ||
-    currentLayout.value === 'sidebar-nav',
+    currentLayout.value === 'sidebar-nav' ||
+    currentLayout.value === 'header-mixed-nav' ||
+    currentLayout.value === 'header-sidebar-nav',
 );
 
 /**
@@ -184,7 +210,7 @@ const headerFixed = computed(() => {
 });
 
 const showSidebar = computed(() => {
-  return isSideMode.value && sidebarEnable.value;
+  return isSideMode.value && sidebarEnable.value && !props.sidebarHidden;
 });
 
 /**
@@ -199,12 +225,13 @@ const mainStyle = computed(() => {
     headerFixed.value &&
     currentLayout.value !== 'header-nav' &&
     currentLayout.value !== 'mixed-nav' &&
+    currentLayout.value !== 'header-sidebar-nav' &&
     showSidebar.value &&
     !props.isMobile
   ) {
     // fixed模式下生效
     const isSideNavEffective =
-      isSidebarMixedNav.value &&
+      (isSidebarMixedNav.value || isHeaderMixedNav.value) &&
       sidebarExpandOnHover.value &&
       sidebarExtraVisible.value;
 
@@ -355,6 +382,26 @@ watch(
   },
 );
 
+watch(
+  [() => headerWrapperHeight.value, () => isFullContent.value],
+  ([height]) => {
+    setLayoutHeaderHeight(isFullContent.value ? 0 : height);
+  },
+  {
+    immediate: true,
+  },
+);
+
+watch(
+  () => props.footerHeight,
+  (height: number) => {
+    setLayoutFooterHeight(height);
+  },
+  {
+    immediate: true,
+  },
+);
+
 {
   const mouseMove = () => {
     mouseY.value > headerWrapperHeight.value
@@ -429,6 +476,8 @@ function handleHeaderToggle() {
     emit('toggleSidebar');
   }
 }
+
+const idMainContent = ELEMENT_ID_MAIN_CONTENT;
 </script>
 
 <template>
@@ -440,12 +489,14 @@ function handleHeaderToggle() {
       v-model:expand-on-hovering="sidebarExpandOnHovering"
       v-model:extra-collapse="sidebarExtraCollapse"
       v-model:extra-visible="sidebarExtraVisible"
+      :show-collapse-button="sidebarCollapsedButton"
+      :show-fixed-button="sidebarFixedButton"
       :collapse-width="getSideCollapseWidth"
       :dom-visible="!isMobile"
       :extra-width="sidebarExtraWidth"
       :fixed-extra="sidebarExpandOnHover"
       :header-height="isMixedNav ? 0 : headerHeight"
-      :is-sidebar-mixed="isSidebarMixedNav"
+      :is-sidebar-mixed="isSidebarMixedNav || isHeaderMixedNav"
       :margin-top="sidebarMarginTop"
       :mixed-width="sidebarMixedWidth"
       :show="showSidebar"
@@ -458,7 +509,7 @@ function handleHeaderToggle() {
         <slot name="logo"></slot>
       </template>
 
-      <template v-if="isSidebarMixedNav">
+      <template v-if="isSidebarMixedNav || isHeaderMixedNav">
         <slot name="mixed-menu"></slot>
       </template>
       <template v-else>
@@ -478,9 +529,12 @@ function handleHeaderToggle() {
       class="flex flex-1 flex-col overflow-hidden transition-all duration-300 ease-in"
     >
       <div
-        :class="{
-          'shadow-[0_16px_24px_hsl(var(--background))]': scrollY > 20,
-        }"
+        :class="[
+          {
+            'shadow-[0_16px_24px_hsl(var(--background))]': scrollY > 20,
+          },
+          SCROLL_FIXED_CLASS,
+        ]"
         :style="headerWrapperStyle"
         class="overflow-hidden transition-all duration-200"
       >
@@ -502,7 +556,7 @@ function handleHeaderToggle() {
           <template #toggle-button>
             <VbenIconButton
               v-if="showHeaderToggleButton"
-              class="my-0 ml-2 mr-1 rounded-md"
+              class="my-0 mr-1 rounded-md"
               @click="handleHeaderToggle"
             >
               <Menu class="size-4" />
@@ -522,6 +576,7 @@ function handleHeaderToggle() {
 
       <!-- </div> -->
       <LayoutContent
+        :id="idMainContent"
         :content-compact="contentCompact"
         :content-compact-width="contentCompactWidth"
         :padding="contentPadding"

@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 import type { UseResizeObserverReturn } from '@vueuse/core';
 
+import type { SetupContext, VNodeArrayChildren } from 'vue';
+
 import type {
   MenuItemClicked,
   MenuItemRegistered,
@@ -15,14 +17,12 @@ import {
   ref,
   toRef,
   useSlots,
-  type VNodeArrayChildren,
   watch,
   watchEffect,
 } from 'vue';
 
 import { useNamespace } from '@vben-core/composables';
 import { Ellipsis } from '@vben-core/icons';
-import { isHttpUrl } from '@vben-core/shared';
 
 import { useResizeObserver } from '@vueuse/core';
 
@@ -31,6 +31,7 @@ import {
   createSubMenuContext,
   useMenuStyle,
 } from '../hooks';
+import { useMenuScroll } from '../hooks/use-menu-scroll';
 import { flattedChildren } from '../utils';
 import SubMenu from './sub-menu.vue';
 
@@ -44,6 +45,7 @@ const props = withDefaults(defineProps<Props>(), {
   mode: 'vertical',
   rounded: true,
   theme: 'dark',
+  scrollToActive: false,
 });
 
 const emit = defineEmits<{
@@ -54,7 +56,7 @@ const emit = defineEmits<{
 
 const { b, is } = useNamespace('menu');
 const menuStyle = useMenuStyle();
-const slots = useSlots();
+const slots: SetupContext['slots'] = useSlots();
 const menu = ref<HTMLUListElement>();
 const sliceIndex = ref(-1);
 const openedMenus = ref<MenuProvider['openedMenus']>(
@@ -64,7 +66,6 @@ const activePath = ref<MenuProvider['activePath']>(props.defaultActive);
 const items = ref<MenuProvider['items']>({});
 const subMenus = ref<MenuProvider['subMenus']>({});
 const mouseInChild = ref(false);
-const defaultSlots: VNodeArrayChildren = slots.default?.() ?? [];
 
 const isMenuPopup = computed<MenuProvider['isMenuPopup']>(() => {
   return (
@@ -73,6 +74,9 @@ const isMenuPopup = computed<MenuProvider['isMenuPopup']>(() => {
 });
 
 const getSlot = computed(() => {
+  // 更新插槽内容
+  const defaultSlots: VNodeArrayChildren = slots.default?.() ?? [];
+
   const originalSlot = flattedChildren(defaultSlots) as VNodeArrayChildren;
   const slotDefault =
     sliceIndex.value === -1
@@ -204,15 +208,19 @@ function handleResize() {
   isFirstTimeRender = false;
 }
 
-function getActivePaths() {
-  const activeItem = activePath.value && items.value[activePath.value];
+const enableScroll = computed(
+  () => props.scrollToActive && props.mode === 'vertical' && !props.collapse,
+);
 
-  if (!activeItem || props.mode === 'horizontal' || props.collapse) {
-    return [];
-  }
+const { scrollToActiveItem } = useMenuScroll(activePath, {
+  enable: enableScroll,
+  delay: 320,
+});
 
-  return activeItem.parentPaths;
-}
+// 监听 activePath 变化，自动滚动到激活项
+watch(activePath, () => {
+  scrollToActiveItem();
+});
 
 // 默认展开菜单
 function initMenu() {
@@ -244,9 +252,6 @@ function handleMenuItemClick(data: MenuItemClicked) {
   const { parentPaths, path } = data;
   if (!path || !parentPaths) {
     return;
-  }
-  if (!isHttpUrl(path)) {
-    activePath.value = path;
   }
 
   emit('select', path, parentPaths);
@@ -319,6 +324,16 @@ function removeSubMenu(subMenu: MenuItemRegistered) {
 function removeMenuItem(item: MenuItemRegistered) {
   Reflect.deleteProperty(items.value, item.path);
 }
+
+function getActivePaths() {
+  const activeItem = activePath.value && items.value[activePath.value];
+
+  if (!activeItem || props.mode === 'horizontal' || props.collapse) {
+    return [];
+  }
+
+  return activeItem.parentPaths;
+}
 </script>
 <template>
   <ul
@@ -330,6 +345,7 @@ function removeMenuItem(item: MenuItemRegistered) {
       is(theme, true),
       is('rounded', rounded),
       is('collapse', collapse),
+      is('menu-align', mode === 'horizontal'),
     ]"
     :style="menuStyle"
     role="menu"
@@ -374,10 +390,10 @@ $namespace: vben;
     var(--menu-item-margin-x);
   font-size: var(--menu-font-size);
   color: var(--menu-item-color);
-  text-decoration: none;
   white-space: nowrap;
-  list-style: none;
+  text-decoration: none;
   cursor: pointer;
+  list-style: none;
   background: var(--menu-item-background-color);
   border: none;
   border-radius: var(--menu-item-radius);
@@ -421,6 +437,10 @@ $namespace: vben;
   opacity: 1;
 }
 
+.is-menu-align {
+  justify-content: var(--menu-align, start);
+}
+
 .#{$namespace}-menu__popup-container,
 .#{$namespace}-menu {
   --menu-title-width: 140px;
@@ -430,7 +450,7 @@ $namespace: vben;
   --menu-item-padding-x: 12px;
   --menu-item-popup-padding-y: 20px;
   --menu-item-popup-padding-x: 12px;
-  --menu-item-margin-y: 3px;
+  --menu-item-margin-y: 2px;
   --menu-item-margin-x: 0px;
   --menu-item-collapse-padding-y: 23.5px;
   --menu-item-collapse-padding-x: 0px;
@@ -475,7 +495,7 @@ $namespace: vben;
   &.is-rounded {
     --menu-item-margin-x: 8px;
     --menu-item-collapse-margin-x: 6px;
-    --menu-item-radius: 10px;
+    --menu-item-radius: 8px;
   }
 
   &.is-horizontal:not(.is-rounded) {
@@ -697,8 +717,8 @@ $namespace: vben;
     width: var(--menu-item-icon-size);
     height: var(--menu-item-icon-size);
     margin-right: 8px;
-    text-align: center;
     vertical-align: middle;
+    text-align: center;
   }
 }
 
@@ -718,6 +738,10 @@ $namespace: vben;
     align-items: center;
     width: 100%;
     height: var(--menu-item-height);
+
+    span {
+      @include menu-title;
+    }
   }
 
   &.is-collapse-show-title {

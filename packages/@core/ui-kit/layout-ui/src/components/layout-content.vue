@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import type { CSSProperties } from 'vue';
+
 import type { ContentCompactType } from '@vben-core/typings';
 
-import type { CSSProperties } from 'vue';
 import { computed } from 'vue';
 
-import { useContentStyle } from '@vben-core/composables';
+import { useLayoutContentStyle } from '@vben-core/composables';
 import { Slot } from '@vben-core/shadcn-ui';
 
 interface Props {
@@ -25,7 +26,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {});
 
-const { contentElement, overlayStyle } = useContentStyle();
+const { contentElement, overlayStyle } = useLayoutContentStyle();
 
 const style = computed((): CSSProperties => {
   const {

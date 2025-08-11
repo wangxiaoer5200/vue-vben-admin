@@ -1,11 +1,12 @@
+import type { RouteRecordRaw } from 'vue-router';
+
 import type {
   ComponentRecordType,
   GenerateMenuAndRoutesOptions,
   RouteRecordStringComponent,
 } from '@vben-core/typings';
-import type { RouteRecordRaw } from 'vue-router';
 
-import { mapTree } from '@vben-core/shared';
+import { mapTree } from '@vben-core/shared/utils';
 
 /**
  * 动态生成路由 - 后端方式
@@ -32,7 +33,7 @@ async function generateRoutesByBackend(
     return routes;
   } catch (error) {
     console.error(error);
-    return [];
+    throw error;
   }
 }
 
@@ -55,12 +56,15 @@ function convertRoutes(
       // 页面组件转换
     } else if (component) {
       const normalizePath = normalizeViewPath(component);
-      route.component =
-        pageMap[
-          normalizePath.endsWith('.vue')
-            ? normalizePath
-            : `${normalizePath}.vue`
-        ];
+      const pageKey = normalizePath.endsWith('.vue')
+        ? normalizePath
+        : `${normalizePath}.vue`;
+      if (pageMap[pageKey]) {
+        route.component = pageMap[pageKey];
+      } else {
+        console.error(`route component is invalid: ${pageKey}`, route);
+        route.component = pageMap['/_core/fallback/not-found.vue'];
+      }
     }
 
     return route;

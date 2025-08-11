@@ -1,6 +1,7 @@
-import type { AxiosRequestConfig, AxiosResponse } from 'axios';
-
 import type { RequestClient } from '../request-client';
+import type { RequestClientConfig } from '../types';
+
+import { isUndefined } from '@vben/utils';
 
 class FileUploader {
   private client: RequestClient;
@@ -9,15 +10,24 @@ class FileUploader {
     this.client = client;
   }
 
-  public async upload(
+  public async upload<T = any>(
     url: string,
-    file: Blob | File,
-    config?: AxiosRequestConfig,
-  ): Promise<AxiosResponse> {
+    data: Record<string, any> & { file: Blob | File },
+    config?: RequestClientConfig,
+  ): Promise<T> {
     const formData = new FormData();
-    formData.append('file', file);
 
-    const finalConfig: AxiosRequestConfig = {
+    Object.entries(data).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        value.forEach((item, index) => {
+          !isUndefined(item) && formData.append(`${key}[${index}]`, item);
+        });
+      } else {
+        !isUndefined(value) && formData.append(key, value);
+      }
+    });
+
+    const finalConfig: RequestClientConfig = {
       ...config,
       headers: {
         'Content-Type': 'multipart/form-data',

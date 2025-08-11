@@ -4,7 +4,8 @@ import type { InitialOptions, Preferences } from './types';
 
 import { markRaw, reactive, readonly, watch } from 'vue';
 
-import { isMacOs, merge, StorageManager } from '@vben-core/shared';
+import { StorageManager } from '@vben-core/shared/cache';
+import { isMacOs, merge } from '@vben-core/shared/utils';
 
 import {
   breakpointsTailwind,
@@ -36,6 +37,90 @@ class PreferenceManager {
       (preference: Preferences) => this._savePreferences(preference),
       150,
     );
+  }
+
+  clearCache() {
+    [STORAGE_KEY, STORAGE_KEY_LOCALE, STORAGE_KEY_THEME].forEach((key) => {
+      this.cache?.removeItem(key);
+    });
+  }
+
+  public getInitialPreferences() {
+    return this.initialPreferences;
+  }
+
+  public getPreferences() {
+    return readonly(this.state);
+  }
+
+  /**
+   * 覆盖偏好设置
+   * overrides  要覆盖的偏好设置
+   * namespace  命名空间
+   */
+  public async initPreferences({ namespace, overrides }: InitialOptions) {
+    // 是否初始化过
+    if (this.isInitialized) {
+      return;
+    }
+    // 初始化存储管理器
+    this.cache = new StorageManager({ prefix: namespace });
+    // 合并初始偏好设置
+    this.initialPreferences = merge({}, overrides, defaultPreferences);
+
+    // 加载并合并当前存储的偏好设置
+    const mergedPreference = merge(
+      {},
+      // overrides,
+      this.loadCachedPreferences() || {},
+      this.initialPreferences,
+    );
+
+    // 更新偏好设置
+    this.updatePreferences(mergedPreference);
+
+    this.setupWatcher();
+
+    this.initPlatform();
+    // 标记为已初始化
+    this.isInitialized = true;
+  }
+
+  /**
+   * 重置偏好设置
+   * 偏好设置将被重置为初始值，并从 localStorage 中移除。
+   *
+   * @example
+   * 假设 initialPreferences 为 { theme: 'light', language: 'en' }
+   * 当前 state 为 { theme: 'dark', language: 'fr' }
+   * this.resetPreferences();
+   * 调用后，state 将被重置为 { theme: 'light', language: 'en' }
+   * 并且 localStorage 中的对应项将被移除
+   */
+  resetPreferences() {
+    // 将状态重置为初始偏好设置
+    Object.assign(this.state, this.initialPreferences);
+    // 保存重置后的偏好设置
+    this.savePreferences(this.state);
+    // 从存储中移除偏好设置项
+    [STORAGE_KEY, STORAGE_KEY_THEME, STORAGE_KEY_LOCALE].forEach((key) => {
+      this.cache?.removeItem(key);
+    });
+    this.updatePreferences(this.state);
+  }
+
+  /**
+   * 更新偏好设置
+   * @param updates - 要更新的偏好设置
+   */
+  public updatePreferences(updates: DeepPartial<Preferences>) {
+    const mergedState = merge({}, updates, markRaw(this.state));
+
+    Object.assign(this.state, mergedState);
+
+    // 根据更新的键值执行相应的操作
+    this.handleUpdates(updates);
+    this.savePreferences(this.state);
   }
 
   /**
@@ -113,9 +198,16 @@ class PreferenceManager {
     window
       .matchMedia('(prefers-color-scheme: dark)')
       .addEventListener('change', ({ matches: isDark }) => {
-        this.updatePreferences({
-          theme: { mode: isDark ? 'dark' : 'light' },
-        });
+        // 如果偏好设置中主题模式为auto，则跟随系统更新
+        if (this.state.theme.mode === 'auto') {
+          this.updatePreferences({
+            theme: { mode: isDark ? 'dark' : 'light' },
+          });
+          // 恢复为auto模式
+          this.updatePreferences({
+            theme: { mode: 'auto' },
+          });
+        }
       });
   }
 
@@ -136,89 +228,6 @@ class PreferenceManager {
         ? dom.classList.add(COLOR_GRAY)
         : dom.classList.remove(COLOR_GRAY);
     }
-  }
-
-  clearCache() {
-    [STORAGE_KEY, STORAGE_KEY_LOCALE, STORAGE_KEY_THEME].forEach((key) => {
-      this.cache?.removeItem(key);
-    });
-  }
-
-  public getInitialPreferences() {
-    return this.initialPreferences;
-  }
-
-  public getPreferences() {
-    return readonly(this.state);
-  }
-
-  /**
-   * 覆盖偏好设置
-   * overrides  要覆盖的偏好设置
-   * namespace  命名空间
-   */
-  public async initPreferences({ namespace, overrides }: InitialOptions) {
-    // 是否初始化过
-    if (this.isInitialized) {
-      return;
-    }
-    // 初始化存储管理器
-    this.cache = new StorageManager({ prefix: namespace });
-    // 合并初始偏好设置
-    this.initialPreferences = merge({}, overrides, defaultPreferences);
-
-    // 加载并合并当前存储的偏好设置
-    const mergedPreference = merge(
-      {},
-      overrides,
-      this.loadCachedPreferences() || defaultPreferences,
-    );
-
-    // 更新偏好设置
-    this.updatePreferences(mergedPreference);
-
-    this.setupWatcher();
-
-    this.initPlatform();
-    // 标记为已初始化
-    this.isInitialized = true;
-  }
-
-  /**
-   * 重置偏好设置
-   * 偏好设置将被重置为初始值，并从 localStorage 中移除。
-   *
-   * @example
-   * 假设 initialPreferences 为 { theme: 'light', language: 'en' }
-   * 当前 state 为 { theme: 'dark', language: 'fr' }
-   * this.resetPreferences();
-   * 调用后，state 将被重置为 { theme: 'light', language: 'en' }
-   * 并且 localStorage 中的对应项将被移除
-   */
-  resetPreferences() {
-    // 将状态重置为初始偏好设置
-    Object.assign(this.state, this.initialPreferences);
-    // 保存重置后的偏好设置
-    this.savePreferences(this.state);
-    // 从存储中移除偏好设置项
-    [STORAGE_KEY, STORAGE_KEY_THEME, STORAGE_KEY_LOCALE].forEach((key) => {
-      this.cache?.removeItem(key);
-    });
-    this.updatePreferences(this.state);
-  }
-
-  /**
-   * 更新偏好设置
-   * @param updates - 要更新的偏好设置
-   */
-  public updatePreferences(updates: DeepPartial<Preferences>) {
-    const mergedState = merge({}, updates, markRaw(this.state));
-
-    Object.assign(this.state, mergedState);
-
-    // 根据更新的键值执行相应的操作
-    this.handleUpdates(updates);
-    this.savePreferences(this.state);
   }
 }
 

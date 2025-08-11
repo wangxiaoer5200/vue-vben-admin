@@ -3,7 +3,10 @@ import type { HeadConfig } from 'vitepress';
 
 import { resolve } from 'node:path';
 
-import { viteArchiverPlugin } from '@vben/vite-config';
+import {
+  viteArchiverPlugin,
+  viteVxeTableImportsPlugin,
+} from '@vben/vite-config';
 
 import {
   GitChangelog,
@@ -11,6 +14,10 @@ import {
 } from '@nolebase/vitepress-plugin-git-changelog/vite';
 import tailwind from 'tailwindcss';
 import { defineConfig, postcssIsolateStyles } from 'vitepress';
+import {
+  groupIconMdPlugin,
+  groupIconVitePlugin,
+} from 'vitepress-plugin-group-icons';
 
 import { demoPreviewPlugin } from './plugins/demo-preview';
 import { search as zhSearch } from './zh.mts';
@@ -21,13 +28,14 @@ export const shared = defineConfig({
   markdown: {
     preConfig(md) {
       md.use(demoPreviewPlugin);
+      md.use(groupIconMdPlugin);
     },
   },
   pwa: pwa(),
   srcDir: 'src',
   themeConfig: {
     i18nRouting: true,
-    logo: 'https://unpkg.com/@vbenjs/static-source@0.1.6/source/logo-v1.webp',
+    logo: 'https://unpkg.com/@vbenjs/static-source@0.1.7/source/logo-v1.webp',
     search: {
       options: {
         locales: {
@@ -54,6 +62,11 @@ export const shared = defineConfig({
           postcssIsolateStyles({ includeFiles: [/vp-doc\.css/] }),
         ],
       },
+      preprocessorOptions: {
+        scss: {
+          api: 'modern',
+        },
+      },
     },
     json: {
       stringify: true,
@@ -79,6 +92,8 @@ export const shared = defineConfig({
       }),
       GitChangelogMarkdownSection(),
       viteArchiverPlugin({ outputDir: '.vitepress' }),
+      groupIconVitePlugin(),
+      await viteVxeTableImportsPlugin(),
     ],
     server: {
       fs: {
@@ -87,6 +102,7 @@ export const shared = defineConfig({
       host: true,
       port: 6173,
     },
+
     ssr: {
       external: ['@vue/repl'],
     },
@@ -132,12 +148,12 @@ function pwa(): PwaOptions {
       icons: [
         {
           sizes: '192x192',
-          src: 'https://unpkg.com/@vbenjs/static-source@0.1.6/source/pwa-icon-192.png',
+          src: 'https://unpkg.com/@vbenjs/static-source@0.1.7/source/pwa-icon-192.png',
           type: 'image/png',
         },
         {
           sizes: '512x512',
-          src: 'https://unpkg.com/@vbenjs/static-source@0.1.6/source/pwa-icon-512.png',
+          src: 'https://unpkg.com/@vbenjs/static-source@0.1.7/source/pwa-icon-512.png',
           type: 'image/png',
         },
       ],
@@ -150,6 +166,7 @@ function pwa(): PwaOptions {
     registerType: 'autoUpdate',
     workbox: {
       globPatterns: ['**/*.{css,js,html,svg,png,ico,txt,woff2}'],
+      maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
     },
   };
 }

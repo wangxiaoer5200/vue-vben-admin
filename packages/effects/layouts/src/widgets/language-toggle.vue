@@ -5,13 +5,15 @@ import { SUPPORT_LANGUAGES } from '@vben/constants';
 import { Languages } from '@vben/icons';
 import { loadLocaleMessages } from '@vben/locales';
 import { preferences, updatePreferences } from '@vben/preferences';
+
 import { VbenDropdownRadioMenu, VbenIconButton } from '@vben-core/shadcn-ui';
 
 defineOptions({
   name: 'LanguageToggle',
 });
 
-async function handleUpdate(value: string) {
+async function handleUpdate(value: string | undefined) {
+  if (!value) return;
   const locale = value as SupportedLanguagesType;
   updatePreferences({
     app: {
@@ -30,7 +32,7 @@ async function handleUpdate(value: string) {
       @update:model-value="handleUpdate"
     >
       <VbenIconButton>
-        <Languages class="size-4" />
+        <Languages class="text-foreground size-4" />
       </VbenIconButton>
     </VbenDropdownRadioMenu>
   </div>

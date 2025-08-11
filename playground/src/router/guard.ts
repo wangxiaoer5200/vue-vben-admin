@@ -1,14 +1,11 @@
 import type { Router } from 'vue-router';
 
-import { DEFAULT_HOME_PATH, LOGIN_PATH } from '@vben/constants';
+import { LOGIN_PATH } from '@vben/constants';
 import { preferences } from '@vben/preferences';
 import { useAccessStore, useUserStore } from '@vben/stores';
 import { startProgress, stopProgress } from '@vben/utils';
 
-import { useTitle } from '@vueuse/core';
-
-import { $t } from '#/locales';
-import { coreRouteNames, dynamicRoutes } from '#/router/routes';
+import { accessRoutes, coreRouteNames } from '#/router/routes';
 import { useAuthStore } from '#/store';
 
 import { generateAccess } from './access';
@@ -21,7 +18,7 @@ function setupCommonGuard(router: Router) {
   // 记录已经加载的页面
   const loadedPaths = new Set<string>();
 
-  router.beforeEach(async (to) => {
+  router.beforeEach((to) => {
     to.meta.loaded = loadedPaths.has(to.path);
 
     // 页面加载进度条
@@ -33,21 +30,11 @@ function setupCommonGuard(router: Router) {
 
   router.afterEach((to) => {
     // 记录页面是否加载,如果已经加载，后续的页面切换动画等效果不在重复执行
-
-    if (preferences.tabbar.enable) {
-      loadedPaths.add(to.path);
-    }
+    loadedPaths.add(to.path);
 
     // 关闭页面加载进度条
     if (preferences.transition.progress) {
       stopProgress();
-    }
-
-    // 动态修改标题
-    if (preferences.app.dynamicTitle) {
-      const { title } = to.meta;
-      // useTitle(`${$t(title)} - ${preferences.app.name}`);
-      useTitle(`${$t(title)} - ${preferences.app.name}`);
     }
   });
 }
@@ -65,7 +52,9 @@ function setupAccessGuard(router: Router) {
     if (coreRouteNames.includes(to.name as string)) {
       if (to.path === LOGIN_PATH && accessStore.accessToken) {
         return decodeURIComponent(
-          (to.query?.redirect as string) || DEFAULT_HOME_PATH,
+          (to.query?.redirect as string) ||
+            userStore.userInfo?.homePath ||
+            preferences.app.defaultHomePath,
         );
       }
       return true;
@@ -83,7 +72,10 @@ function setupAccessGuard(router: Router) {
         return {
           path: LOGIN_PATH,
           // 如不需要，直接删除 query
-          query: { redirect: encodeURIComponent(to.fullPath) },
+          query:
+            to.fullPath === preferences.app.defaultHomePath
+              ? {}
+              : { redirect: encodeURIComponent(to.fullPath) },
           // 携带当前跳转的页面，登录后重新跳转该页面
           replace: true,
         };
@@ -106,15 +98,23 @@ function setupAccessGuard(router: Router) {
       roles: userRoles,
       router,
       // 则会在菜单中显示，但是访问会被重定向到403
-      routes: dynamicRoutes,
+      routes: accessRoutes,
     });
 
     // 保存菜单信息和路由信息
     accessStore.setAccessMenus(accessibleMenus);
     accessStore.setAccessRoutes(accessibleRoutes);
     accessStore.setIsAccessChecked(true);
-    const redirectPath = (from.query.redirect ?? to.fullPath) as string;
-
+    let redirectPath: string;
+    if (from.query.redirect) {
+      redirectPath = from.query.redirect as string;
+    } else if (to.path === preferences.app.defaultHomePath) {
+      redirectPath = preferences.app.defaultHomePath;
+    } else if (userInfo.homePath && to.path === userInfo.homePath) {
+      redirectPath = userInfo.homePath;
+    } else {
+      redirectPath = to.fullPath;
+    }
     return {
       ...router.resolve(decodeURIComponent(redirectPath)),
       replace: true,

@@ -1,6 +1,6 @@
 {
   "name": "@vben/hooks",
-  "version": "5.2.1",
+  "version": "5.5.8",
   "homepage": "https://github.com/vbenjs/vue-vben-admin",
   "bugs": "https://github.com/vbenjs/vue-vben-admin/issues",
   "repository": {
@@ -25,8 +25,9 @@
     "@vben/stores": "workspace:*",
     "@vben/types": "workspace:*",
     "@vben/utils": "workspace:*",
-    "vue": "^3.4.38",
-    "vue-router": "^4.4.3",
-    "watermark-js-plus": "^1.5.4"
+    "@vueuse/core": "catalog:",
+    "vue": "catalog:",
+    "vue-router": "catalog:",
+    "watermark-js-plus": "catalog:"
   }
 }

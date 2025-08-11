@@ -14,11 +14,6 @@ interface AuthenticationProps {
   loading?: boolean;
 
   /**
-   * @zh_CN 密码占位符
-   */
-  passwordPlaceholder?: string;
-
-  /**
    * @zh_CN 二维码登录路径
    */
   qrCodeLoginPath?: string;
@@ -66,40 +61,10 @@ interface AuthenticationProps {
    * @zh_CN 登录框标题
    */
   title?: string;
-
   /**
-   * @zh_CN 用户名占位符
+   * @zh_CN 提交按钮文本
    */
-  usernamePlaceholder?: string;
+  submitButtonText?: string;
 }
 
-interface LoginAndRegisterParams {
-  password: string;
-  username: string;
-}
-
-interface LoginCodeParams {
-  code: string;
-  phoneNumber: string;
-}
-
-interface LoginEmits {
-  submit: [LoginAndRegisterParams];
-}
-
-interface LoginCodeEmits {
-  submit: [LoginCodeParams];
-}
-
-interface RegisterEmits {
-  submit: [LoginAndRegisterParams];
-}
-
-export type {
-  AuthenticationProps,
-  LoginAndRegisterParams,
-  LoginCodeEmits,
-  LoginCodeParams,
-  LoginEmits,
-  RegisterEmits,
-};
+export type { AuthenticationProps };

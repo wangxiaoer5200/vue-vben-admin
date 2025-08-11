@@ -3,7 +3,6 @@ import type { BreadcrumbProps } from './types';
 
 import { ChevronDown } from '@vben-core/icons';
 
-import { VbenIcon } from '../icon';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -11,13 +10,12 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '../ui/breadcrumb';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '../ui/dropdown-menu';
+} from '../../ui';
+import { VbenIcon } from '../icon';
 
 interface Props extends BreadcrumbProps {}
 
@@ -47,12 +45,7 @@ function handleClick(path?: string) {
             <div v-if="item.items?.length ?? 0 > 0">
               <DropdownMenu>
                 <DropdownMenuTrigger class="flex items-center gap-1">
-                  <VbenIcon
-                    v-if="showIcon"
-                    :fallback="showIcon"
-                    :icon="item.icon"
-                    class="size-5"
-                  />
+                  <VbenIcon v-if="showIcon" :icon="item.icon" class="size-5" />
                   {{ item.title }}
                   <ChevronDown class="size-4" />
                 </DropdownMenuTrigger>
@@ -77,7 +70,6 @@ function handleClick(path?: string) {
                 <VbenIcon
                   v-if="showIcon"
                   :class="{ 'size-5': item.isHome }"
-                  :fallback="showIcon"
                   :icon="item.icon"
                   class="mr-1 size-4"
                 />
@@ -89,7 +81,6 @@ function handleClick(path?: string) {
                 <VbenIcon
                   v-if="showIcon"
                   :class="{ 'size-5': item.isHome }"
-                  :fallback="showIcon"
                   :icon="item.icon"
                   class="mr-1 size-4"
                 />

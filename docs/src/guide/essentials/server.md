@@ -110,6 +110,36 @@ VITE_GLOB_API_URL=https://mock-napi.vben.pro/api
 
 项目中默认自带了基于 `axios` 封装的基础的请求配置，核心由 `@vben/request` 包提供。项目没有过多的封装，只是简单的封装了一些常用的配置，如有其他需求，可以自行增加或者调整配置。针对不同的app，可能是用到了不同的组件库以及`store`,所以在应用目录下的`src/api/request.ts`文件夹下，有对应的请求配置文件,如`web-antd`项目下的`src/api/request.ts`文件,可以根据自己的需求进行配置。
 
+### 扩展的配置
+
+除了基础的Axios配置外，扩展了部分配置。
+
+```ts
+type ExtendOptions<T = any> = {
+  /**
+   * 参数序列化方式。预置了几种针对数组的序列化类型
+   * - brackets: ids[]=1&ids[]=2&ids[]=3
+   * - comma: ids=1,2,3
+   * - indices: ids[0]=1&ids[1]=2&ids[2]=3
+   * - repeat: ids=1&ids=2&ids=3
+   * @default 'brackets'
+   */
+  paramsSerializer?:
+    | 'brackets'
+    | 'comma'
+    | 'indices'
+    | 'repeat'
+    | AxiosRequestConfig<T>['paramsSerializer'];
+  /**
+   * 响应数据的返回方式。
+   * - raw: 原始的AxiosResponse，包括headers、status等，不做是否成功请求的检查。
+   * - body: 返回响应数据的BODY部分（只会根据status检查请求是否成功，忽略对code的判断，这种情况下应由调用方检查请求是否成功）。
+   * - data: 解构响应的BODY数据，只返回其中的data节点数据（会检查status和code是否为成功状态）。
+   */
+  responseReturn?: 'body' | 'data' | 'raw';
+};
+```
+
 ### 请求示例
 
 #### GET 请求
@@ -150,8 +180,8 @@ export async function saveUserApi(user: UserInfo) {
 ```ts
 import { requestClient } from '#/api/request';
 
-export async function deleteUserApi(user: UserInfo) {
-  return requestClient.delete<boolean>(`/user/${user.id}`, user);
+export async function deleteUserApi(userId: number) {
+  return requestClient.delete<boolean>(`/user/${userId}`);
 }
 ```
 
@@ -163,6 +193,8 @@ export async function deleteUserApi(user: UserInfo) {
 /**
  * 该文件可自行根据业务逻辑进行调整
  */
+import type { HttpResponse } from '@vben/request';
+
 import { useAppConfig } from '@vben/hooks';
 import { preferences } from '@vben/preferences';
 import {
@@ -229,19 +261,17 @@ function createRequestClient(baseURL: string) {
     },
   });
 
-  // response数据解构
-  client.addResponseInterceptor({
-    fulfilled: (response) => {
-      const { data: responseData, status } = response;
-
-      const { code, data, message: msg } = responseData;
-
-      if (status >= 200 && status < 400 && code === 0) {
-        return data;
-      }
-      throw new Error(`Error ${status}: ${msg}`);
-    },
-  });
+  // 处理返回的响应数据格式。会根据responseReturn指定的类型返回对应的数据
+  client.addResponseInterceptor(
+    defaultResponseInterceptor({
+      // 指定接口返回的数据中的 code 字段名
+      codeField: 'code',
+      // 指定接口返回的数据中装载了主要数据的字段名
+      dataField: 'data',
+      // 请求成功的 code 值，如果接口返回的 code 等于 successCode 则会认为是成功的请求
+      successCode: 0,
+    }),
+  );
 
   // token过期的处理
   client.addResponseInterceptor(
@@ -256,7 +286,14 @@ function createRequestClient(baseURL: string) {
 
   // 通用的错误处理,如果没有进入上面的错误处理逻辑，就会进入这里
   client.addResponseInterceptor(
-    errorMessageResponseInterceptor((msg: string) => message.error(msg)),
+    errorMessageResponseInterceptor((msg: string, error) => {
+      // 这里可以根据业务进行定制,你可以拿到 error 内的信息进行定制化处理，根据不同的 code 做不同的提示，而不是直接使用 message.error 提示 msg
+      // 当前mock接口返回的错误字段是 error 或者 message
+      const responseData = error?.response?.data ?? {};
+      const errorMessage = responseData?.error ?? responseData?.message ?? '';
+      // 如果没有错误信息，则会根据状态码进行提示
+      message.error(errorMessage || msg);
+    }),
   );
 
   return client;

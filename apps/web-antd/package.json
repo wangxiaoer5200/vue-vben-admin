@@ -1,6 +1,6 @@
 {
   "name": "@vben/web-antd",
-  "version": "5.2.1",
+  "version": "5.5.8",
   "homepage": "https://vben.pro",
   "bugs": "https://github.com/vbenjs/vue-vben-admin/issues",
   "repository": {
@@ -40,11 +40,11 @@
     "@vben/styles": "workspace:*",
     "@vben/types": "workspace:*",
     "@vben/utils": "workspace:*",
-    "@vueuse/core": "^11.0.3",
-    "ant-design-vue": "^4.2.3",
-    "dayjs": "^1.11.13",
-    "pinia": "2.2.2",
-    "vue": "^3.4.38",
-    "vue-router": "^4.4.3"
+    "@vueuse/core": "catalog:",
+    "ant-design-vue": "catalog:",
+    "dayjs": "catalog:",
+    "pinia": "catalog:",
+    "vue": "catalog:",
+    "vue-router": "catalog:"
   }
 }

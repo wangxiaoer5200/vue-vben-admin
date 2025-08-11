@@ -8,7 +8,7 @@ on:
 jobs:
   deploy-playground-ftp:
     name: Deploy Push Playground Ftp
-    if: github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]')
+    if: github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]') && github.repository == 'vbenjs/vue-vben-admin'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -39,7 +39,7 @@ jobs:
 
   deploy-docs-ftp:
     name: Deploy Push Docs Ftp
-    if: github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]')
+    if: github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]') && github.repository == 'vbenjs/vue-vben-admin'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -63,7 +63,7 @@ jobs:
 
   deploy-antd-ftp:
     name: Deploy Push Antd Ftp
-    if: github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]')
+    if: github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]') && github.repository == 'vbenjs/vue-vben-admin'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -94,7 +94,7 @@ jobs:
 
   deploy-ele-ftp:
     name: Deploy Push Element Ftp
-    if: github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]')
+    if: github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]') && github.repository == 'vbenjs/vue-vben-admin'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -125,7 +125,7 @@ jobs:
 
   deploy-naive-ftp:
     name: Deploy Push Naive Ftp
-    if: github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]')
+    if: github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]') && github.repository == 'vbenjs/vue-vben-admin'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -153,3 +153,20 @@ jobs:
           username: ${{ secrets.WEB_NAIVE_FTP_ACCOUNT }}
           password: ${{ secrets.WEB_NAIVE_FTP_PASSWORD }}
           local-dir: ./apps/web-naive/dist/
+
+  rerun-on-failure:
+    name: Rerun on failure
+    needs:
+      - deploy-playground-ftp
+      - deploy-docs-ftp
+      - deploy-antd-ftp
+      - deploy-ele-ftp
+      - deploy-naive-ftp
+    if: failure() && fromJSON(github.run_attempt) < 10
+    runs-on: ubuntu-latest
+    steps:
+      - name: Retry ${{ fromJSON(github.run_attempt) }} of 10
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run rerun.yml -F run_id=${{ github.run_id }}
